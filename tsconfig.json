@@ -1,0 +1,27 @@
+{
+    "extends": "expo/tsconfig.base",
+    "compilerOptions": {
+        "strict": true,
+        "paths": {
+            "@/*": ["./*"],
+            "@src/*": ["./src/*"],
+            "@app/*": ["./src/app/*"],
+            "@assets/*": ["./src/assets/*"],
+            "@components/*": ["./src/components/*"],
+            "@constants/*": ["./src/constants/*"]
+        }
+    },
+    "include": [
+        "**/*.ts",
+        "**/*.tsx",
+        ".expo/types/**/*.ts",
+        "expo-env.d.ts",
+        "src/components/HomeIcon.jsx",
+        "src/app/_layout.jsx",
+        "src/app/(tabs)/index.jsx",
+        "src/app/(tabs)/_layout.jsx",
+        "src/app/(tabs)/user/index.jsx",
+        "src/app/(tabs)/enquiry/index.jsx",
+        "src/constants/Colors.js"
+, "src/components/CustomDropDown.jsx"    ]
+}
