@@ -1,11 +1,12 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import {
     IconHome,
     IconServices,
     IconEnquiry,
     IconProfile,
 } from '@constants/SvgIcons';
+import { Colors } from '@constants/Colors';
 import { Tabs } from 'expo-router';
 
 export default function TabsLayout() {
@@ -16,7 +17,8 @@ export default function TabsLayout() {
                     backgroundColor: '#FFFFFF',
                     height: 72,
                 },
-                tabBarActiveTintColor: '#000000',
+                tabBarHideOnKeyboard: true,
+                tabBarActiveTintColor: Colors.light.red90,
                 tabBarInactiveTintColor: '#9e9e9e',
                 tabBarShowLabel: false,
             }}
@@ -26,18 +28,11 @@ export default function TabsLayout() {
                 options={{
                     title: 'Home',
                     tabBarIcon: ({ color, size, focused }) => (
-                        <View
-                            style={{
-                                flex: 1,
-                                aspectRatio: 1,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
+                        <View style={styles.tab}>
                             <IconHome
                                 width={24}
                                 height={24}
-                                fill={focused ? '#212121' : 'none'}
+                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Home
@@ -49,20 +44,14 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name='services'
                 options={{
+                    headerShown: false,
                     title: 'Services',
                     tabBarIcon: ({ color, size, focused }) => (
-                        <View
-                            style={{
-                                flex: 1,
-                                aspectRatio: 1,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
+                        <View style={styles.tab}>
                             <IconServices
                                 width={24}
                                 height={24}
-                                fill={focused ? '#212121' : 'none'}
+                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Services
@@ -76,18 +65,11 @@ export default function TabsLayout() {
                 options={{
                     title: 'Enquiry',
                     tabBarIcon: ({ color, size, focused }) => (
-                        <View
-                            style={{
-                                flex: 1,
-                                aspectRatio: 1,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
+                        <View style={styles.tab}>
                             <IconEnquiry
                                 width={24}
                                 height={24}
-                                fill={focused ? '#212121' : 'none'}
+                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Enquiry
@@ -101,18 +83,11 @@ export default function TabsLayout() {
                 options={{
                     title: 'Profile',
                     tabBarIcon: ({ color, size, focused }) => (
-                        <View
-                            style={{
-                                flex: 1,
-                                aspectRatio: 1,
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
+                        <View style={styles.tab}>
                             <IconProfile
                                 width={24}
                                 height={24}
-                                fill={focused ? '#212121' : 'none'}
+                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Profile
@@ -124,3 +99,12 @@ export default function TabsLayout() {
         </Tabs>
     );
 }
+
+const styles = StyleSheet.create({
+    tab: {
+        flex: 1,
+        aspectRatio: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

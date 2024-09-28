@@ -29,7 +29,7 @@ export default function EquipmentListPage() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <Stack.Screen options={{ title: `${category} Service` }} />
+            <Stack.Screen options={{ title: `${category}` }} />
             <View style={styles.container}>
                 <Text style={styles.title}>{category}</Text>
                 <FlatList

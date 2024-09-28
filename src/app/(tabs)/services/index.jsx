@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -12,9 +12,11 @@ import { Colors } from '@constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import instrumentsList from '@/data';
 import { router } from 'expo-router';
+import { IconArrowRight } from '@constants/SvgIcons';
 
 export default function ServicesPage() {
     const [categories, setCategories] = useState([]);
+    const [isNavigating, setIsNavigating] = useState(false);
 
     useEffect(() => {
         const categoryCounts = instrumentsList.reduce((acc, instrument) => {
@@ -49,22 +51,33 @@ export default function ServicesPage() {
         }).start();
     };
 
+    const navigateToCategory = useCallback(
+        (category) => {
+            if (!isNavigating) {
+                setIsNavigating(true);
+                router.push({
+                    pathname: '/services/[category]',
+                    params: { category: category },
+                });
+                setTimeout(() => setIsNavigating(false), 500); // Reset after 1 second
+            }
+        },
+        [isNavigating]
+    );
+
     const renderCategoryItem = ({ item, index }) => (
         <TouchableOpacity
             activeOpacity={1}
             onPressIn={() => handlePressIn(item.scale)}
             onPressOut={() => handlePressOut(item.scale)}
-            onPress={() =>
-                router.push({
-                    pathname: '/services/[category]',
-                    params: { category: item.name },
-                })
-            }
+            onPress={() => navigateToCategory(item.name)}
+            disabled={isNavigating}
         >
             <Animated.View
                 style={[
                     styles.categoryItem,
                     { transform: [{ scale: item.scale }] },
+                    isNavigating && styles.categoryItemDisabled,
                 ]}
             >
                 <View style={styles.categoryContent}>
@@ -74,11 +87,7 @@ export default function ServicesPage() {
                             {item.count} services
                         </Text>
                     </View>
-                    <Ionicons
-                        name='chevron-forward'
-                        size={24}
-                        color={Colors.light.red60}
-                    />
+                    <IconArrowRight size={24} pathStroke={Colors.light.red60} />
                 </View>
             </Animated.View>
         </TouchableOpacity>
@@ -125,6 +134,9 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         paddingVertical: 12,
         paddingHorizontal: 18,
+    },
+    categoryItemDisabled: {
+        opacity: 0.5,
     },
     categoryContent: {
         flexDirection: 'row',
