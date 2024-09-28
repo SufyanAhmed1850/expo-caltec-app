@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, SafeAreaView } from 'react-native';
 import { Colors } from '@constants/Colors';
 import instrumentsList from '@/data';
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 
 export default function EquipmentListPage() {
     const [equipment, setEquipment] = useState([]);
@@ -29,6 +29,7 @@ export default function EquipmentListPage() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
+            <Stack.Screen options={{ title: `${category} Service` }} />
             <View style={styles.container}>
                 <Text style={styles.title}>{category}</Text>
                 <FlatList

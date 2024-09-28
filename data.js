@@ -438,12 +438,6 @@ const instrumentsList = [
         currency: 'PKR',
     },
     {
-        name: 'Water Bath',
-        category: 'Temperature Calibration',
-        price: 4900,
-        currency: 'PKR',
-    },
-    {
         name: 'Digital Electromagnetic Type Flow Meter',
         category: 'Flow Meter Calibration',
         price: 12000,
@@ -957,12 +951,6 @@ const instrumentsList = [
         name: 'Carpenter’s Level Gauge',
         category: 'Precision Calibration',
         price: 5300,
-        currency: 'PKR',
-    },
-    {
-        name: 'Dial Test Indicator',
-        category: 'Precision Calibration',
-        price: 6800,
         currency: 'PKR',
     },
     {

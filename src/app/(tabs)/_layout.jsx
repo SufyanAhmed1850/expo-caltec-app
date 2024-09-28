@@ -47,7 +47,7 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name='services/index'
+                name='services'
                 options={{
                     title: 'Services',
                     tabBarIcon: ({ color, size, focused }) => (
