@@ -1,6 +1,5 @@
 import { Circle, Path, Svg } from 'react-native-svg';
 import IconSearch from '@assets/icons/light/Search.svg';
-import IconArrowRight from '@assets/icons/light/Arrow - Right 2.svg';
 
 const IconHome = ({ width, height, fill, pathStroke }) => {
     return (
@@ -109,7 +108,7 @@ const IconProfile = ({ width, height, fill, pathStroke }) => {
             <Path
                 clipRule='evenodd'
                 d='M11.985 15.346c-3.868 0-7.17.585-7.17 2.927s3.281 2.948 7.17 2.948c3.867 0 7.17-.586 7.17-2.927s-3.282-2.948-7.17-2.948'
-                stroke={fill}
+                stroke={fill || pathStroke}
                 strokeWidth={1.5}
                 strokeLinecap='round'
                 strokeLinejoin='round'
@@ -117,7 +116,7 @@ const IconProfile = ({ width, height, fill, pathStroke }) => {
             <Path
                 clipRule='evenodd'
                 d='M11.985 12.006A4.596 4.596 0 1 0 7.388 7.41a4.58 4.58 0 0 0 4.564 4.596z'
-                stroke={fill}
+                stroke={fill || pathStroke}
                 strokeWidth={1.429}
                 strokeLinecap='round'
                 strokeLinejoin='round'
@@ -145,6 +144,138 @@ const IconArrowRight = ({ width, height, fill, pathStroke }) => {
     );
 };
 
+const IconMail = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                d='m17.903 8.851-4.444 3.613c-.84.666-2.02.666-2.86 0L6.12 8.851'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                clipRule='evenodd'
+                d='M16.909 21C19.95 21.008 22 18.51 22 15.438V8.57C22 5.499 19.95 3 16.909 3H7.09C4.05 3 2 5.499 2 8.57v6.868C2 18.51 4.05 21.008 7.091 21z'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
+const IconLock = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                d='M16.424 9.448V7.3a4.55 4.55 0 0 0-4.551-4.551 4.55 4.55 0 0 0-4.57 4.53v2.168'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                clipRule='evenodd'
+                d='M15.683 21.25h-7.64a3.79 3.79 0 0 1-3.793-3.792v-4.29a3.79 3.79 0 0 1 3.792-3.791h7.641a3.79 3.79 0 0 1 3.792 3.792v4.289a3.79 3.79 0 0 1-3.792 3.792'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                d='M11.863 14.203v2.22'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
+const IconShow = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                clipRule='evenodd'
+                d='M15.161 12.053a3.162 3.162 0 1 1-6.323-.001 3.162 3.162 0 0 1 6.323.001'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                clipRule='evenodd'
+                d='M11.998 19.355c3.808 0 7.291-2.738 9.252-7.302-1.961-4.564-5.444-7.302-9.252-7.302h.004c-3.808 0-7.291 2.738-9.252 7.302 1.961 4.564 5.444 7.302 9.252 7.302z'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
+const IconHide = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                d='M9.76 14.367a3.12 3.12 0 0 1-.925-2.23A3.16 3.16 0 0 1 12 8.973c.867 0 1.665.35 2.23.925m.875 2.801a3.16 3.16 0 0 1-2.537 2.542'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                d='M6.655 17.472c-1.587-1.246-2.931-3.066-3.905-5.335.984-2.279 2.337-4.109 3.934-5.365C8.27 5.516 10.1 4.834 11.999 4.834c1.91 0 3.74.692 5.336 1.957m2.113 2.199a15.4 15.4 0 0 1 1.802 3.147c-1.968 4.557-5.443 7.302-9.25 7.302a8 8 0 0 1-2.532-.413M19.887 4.25 4.113 20.024'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
+const IconPhone = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                fillRule='evenodd'
+                clipRule='evenodd'
+                d='M6.007 3.407c1.68-1.68 4.516-1.552 5.686.544l.649 1.163c.763 1.368.438 3.095-.68 4.227a.63.63 0 0 0-.104.337c-.013.256.078.849.997 1.767.918.918 1.51 1.01 1.767.997a.63.63 0 0 0 .337-.104c1.131-1.118 2.859-1.443 4.227-.68l1.163.65c2.096 1.17 2.224 4.004.544 5.685-.899.898-2.093 1.697-3.498 1.75-2.08.079-5.536-.459-8.958-3.88-3.421-3.422-3.959-6.877-3.88-8.958.053-1.405.852-2.6 1.75-3.498m4.376 1.275c-.6-1.074-2.21-1.32-3.315-.214-.775.775-1.28 1.63-1.312 2.493-.066 1.736.363 4.762 3.442 7.84 3.08 3.08 6.105 3.509 7.84 3.443.863-.033 1.72-.537 2.494-1.312 1.106-1.106.86-2.716-.214-3.315l-1.163-.649c-.723-.403-1.74-.266-2.453.448-.07.07-.516.486-1.307.524-.81.04-1.791-.324-2.9-1.434-1.111-1.11-1.475-2.091-1.435-2.902.038-.791.455-1.237.524-1.307.714-.713.851-1.729.448-2.452z'
+                fill={pathStroke || '#212121'}
+            />
+        </Svg>
+    );
+};
 export {
     IconHome,
     IconServices,
@@ -152,4 +283,9 @@ export {
     IconProfile,
     IconSearch,
     IconArrowRight,
+    IconMail,
+    IconLock,
+    IconShow,
+    IconHide,
+    IconPhone,
 };

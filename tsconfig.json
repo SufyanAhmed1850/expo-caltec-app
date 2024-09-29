@@ -8,7 +8,8 @@
             "@app/*": ["./src/app/*"],
             "@assets/*": ["./src/assets/*"],
             "@components/*": ["./src/components/*"],
-            "@constants/*": ["./src/constants/*"]
+            "@constants/*": ["./src/constants/*"],
+            "@context/*": ["./src/context/*"]
         }
     },
     "include": [
@@ -18,10 +19,11 @@
         "expo-env.d.ts",
         "src/components/HomeIcon.jsx",
         "src/app/_layout.jsx",
-        "src/app/(tabs)/index.jsx",
-        "src/app/(tabs)/_layout.jsx",
-        "src/app/(tabs)/user/index.jsx",
-        "src/app/(tabs)/enquiry/index.jsx",
-        "src/constants/Colors.js"
-, "src/components/CustomDropDown.jsx"    ]
+        "src/app/(app)/home.jsx",
+        "src/app/(app)/_layout.jsx",
+        "src/app/(app)/user/index.jsx",
+        "src/app/(app)/enquiry/index.jsx",
+        "src/constants/Colors.js",
+        "src/components/CustomDropDown.jsx"
+    ]
 }
