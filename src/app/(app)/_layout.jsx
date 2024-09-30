@@ -32,7 +32,10 @@ export default function TabsLayout() {
                             <IconHome
                                 width={24}
                                 height={24}
-                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
+                                fill={focused && Colors.light.red90}
+                                pathStroke={
+                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Home
@@ -51,7 +54,10 @@ export default function TabsLayout() {
                             <IconServices
                                 width={24}
                                 height={24}
-                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
+                                fill={focused && Colors.light.red90}
+                                pathStroke={
+                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Services
@@ -69,7 +75,10 @@ export default function TabsLayout() {
                             <IconEnquiry
                                 width={24}
                                 height={24}
-                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
+                                fill={focused && Colors.light.red90}
+                                pathStroke={
+                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Enquiry
@@ -79,15 +88,19 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name='user/index'
+                name='user'
                 options={{
+                    headerShown: false,
                     title: 'Profile',
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>
                             <IconProfile
                                 width={24}
                                 height={24}
-                                fill={focused ? Colors.light.red90 : '#9e9e9e'}
+                                fill={focused && Colors.light.red90}
+                                pathStroke={
+                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
                                 Profile

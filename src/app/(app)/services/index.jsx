@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    FlatList,
-    TouchableOpacity,
-    SafeAreaView,
-    Animated,
-} from 'react-native';
-import { Colors } from '@constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
 import instrumentsList from '@/data';
-import { router } from 'expo-router';
+import { Colors } from '@constants/Colors';
 import { IconArrowRight } from '@constants/SvgIcons';
+import { router } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+    Animated,
+    FlatList,
+    SafeAreaView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 
 export default function ServicesPage() {
     const [categories, setCategories] = useState([]);

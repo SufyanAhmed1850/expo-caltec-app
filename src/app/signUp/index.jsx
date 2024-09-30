@@ -10,6 +10,7 @@ import {
     Platform,
     Alert,
     SafeAreaView,
+    Image,
 } from 'react-native';
 import { useAuth } from '@context/authContext';
 import { useRouter } from 'expo-router';
@@ -23,6 +24,7 @@ import {
     IconHide,
 } from '@constants/SvgIcons';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 
 const SignUp = () => {
     const { register } = useAuth();
@@ -34,8 +36,10 @@ const SignUp = () => {
     const [name, setName] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [phone, setPhone] = useState('');
+    const [role, setRole] = useState('user'); // Default role
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [profileImage, setProfileImage] = useState(null);
 
     const handleSignUp = async () => {
         if (
@@ -61,7 +65,9 @@ const SignUp = () => {
             password,
             name,
             companyName,
-            phone
+            phone,
+            role,
+            profileImage
         );
         setIsLoading(false);
         if (!response.success) {
@@ -81,6 +87,29 @@ const SignUp = () => {
         setShowConfirmPassword(!showConfirmPassword);
     };
 
+    const handleImagePick = async () => {
+        const permissionResult =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (permissionResult.granted === false) {
+            Alert.alert(
+                'Permission Required',
+                'You need to grant camera roll permissions to upload a profile picture.'
+            );
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setProfileImage(result.assets[0].uri);
+        }
+    };
+
     return (
         <SafeAreaView style={styles.safeArea}>
             <KeyboardAvoidingView
@@ -89,6 +118,28 @@ const SignUp = () => {
             >
                 <ScrollView contentContainerStyle={styles.scrollView}>
                     <Text style={styles.title}>Sign Up</Text>
+                    <TouchableOpacity
+                        style={styles.imageUpload}
+                        onPress={handleImagePick}
+                    >
+                        {profileImage ? (
+                            <Image
+                                source={{ uri: profileImage }}
+                                style={styles.profileImage}
+                            />
+                        ) : (
+                            <View style={styles.imagePlaceholder}>
+                                <IconProfile
+                                    width={40}
+                                    height={40}
+                                    pathStroke={Colors.light.black30}
+                                />
+                                <Text style={styles.uploadText}>
+                                    Upload Profile Picture
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
                     <View style={styles.inputContainer}>
                         <View style={styles.inputWrapper}>
                             <IconMail
@@ -257,6 +308,28 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         textAlign: 'center',
         color: Colors.light.text,
+    },
+    imageUpload: {
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    profileImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+    },
+    imagePlaceholder: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        backgroundColor: Colors.light.black10,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    uploadText: {
+        marginTop: 5,
+        color: Colors.light.black60,
+        fontSize: 12,
     },
     inputContainer: {
         marginBottom: 20,
