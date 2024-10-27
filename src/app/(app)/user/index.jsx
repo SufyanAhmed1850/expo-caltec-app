@@ -18,7 +18,7 @@ import { useAuth } from '@/src/context/authContext';
 import { Colors } from '@constants/Colors';
 import { IconProfile, IconPhone } from '@constants/SvgIcons';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 
 export default function Profile() {
     const { user, logout, updateProfile, isLoading, refreshUserData } =
@@ -27,6 +27,8 @@ export default function Profile() {
     const [companyName, setCompanyName] = useState('');
     const [phone, setPhone] = useState('');
     const [profileImage, setProfileImage] = useState(null);
+    const [isFormChanged, setIsFormChanged] = useState(false);
+    const navigation = useNavigation();
 
     useEffect(() => {
         if (user) {
@@ -36,6 +38,23 @@ export default function Profile() {
             setProfileImage(user.profileImage || null);
         }
     }, [user]);
+
+    useEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <TouchableOpacity
+                    onPress={handleLogout}
+                    style={styles.logoutButton}
+                >
+                    <Ionicons
+                        name='log-out-outline'
+                        size={24}
+                        color={Colors.light.background}
+                    />
+                </TouchableOpacity>
+            ),
+        });
+    }, [navigation]);
 
     const handleImagePick = async () => {
         const permissionResult =
@@ -57,6 +76,7 @@ export default function Profile() {
 
         if (!result.canceled) {
             setProfileImage(result.assets[0].uri);
+            setIsFormChanged(true);
         }
     };
 
@@ -78,6 +98,7 @@ export default function Profile() {
         );
         if (response.success) {
             Alert.alert('Success', response.msg, [{ text: 'OK' }]);
+            setIsFormChanged(false);
         } else {
             Alert.alert('Error', response.msg, [{ text: 'OK' }]);
         }
@@ -104,6 +125,21 @@ export default function Profile() {
         }
     }, [refreshUserData]);
 
+    const handleInputChange = (field, value) => {
+        switch (field) {
+            case 'name':
+                setName(value);
+                break;
+            case 'companyName':
+                setCompanyName(value);
+                break;
+            case 'phone':
+                setPhone(value);
+                break;
+        }
+        setIsFormChanged(true);
+    };
+
     const navigateToUsersList = () => {
         router.push('/user/usersList');
     };
@@ -123,7 +159,6 @@ export default function Profile() {
                         />
                     }
                 >
-                    <Text style={styles.title}>Profile</Text>
                     <TouchableOpacity
                         style={styles.avatarContainer}
                         onPress={handleImagePick}
@@ -156,7 +191,9 @@ export default function Profile() {
                                 placeholder='Full Name'
                                 placeholderTextColor={Colors.light.black30}
                                 value={name}
-                                onChangeText={setName}
+                                onChangeText={(text) =>
+                                    handleInputChange('name', text)
+                                }
                             />
                         </View>
                         <View style={styles.inputWrapper}>
@@ -171,7 +208,9 @@ export default function Profile() {
                                 placeholder='Company Name'
                                 placeholderTextColor={Colors.light.black30}
                                 value={companyName}
-                                onChangeText={setCompanyName}
+                                onChangeText={(text) =>
+                                    handleInputChange('companyName', text)
+                                }
                             />
                         </View>
                         <View style={styles.inputWrapper}>
@@ -185,7 +224,9 @@ export default function Profile() {
                                 placeholder='Phone Number'
                                 placeholderTextColor={Colors.light.black30}
                                 value={phone}
-                                onChangeText={setPhone}
+                                onChangeText={(text) =>
+                                    handleInputChange('phone', text)
+                                }
                                 keyboardType='phone-pad'
                             />
                         </View>
@@ -214,23 +255,17 @@ export default function Profile() {
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity
-                        style={styles.updateButton}
+                        style={[
+                            styles.updateButton,
+                            !isFormChanged && styles.disabledButton,
+                        ]}
                         onPress={handleUpdate}
-                        disabled={isLoading.update}
+                        disabled={!isFormChanged || isLoading.update}
                     >
                         <Text style={styles.updateButtonText}>
                             {isLoading.update
                                 ? 'Updating...'
                                 : 'Update Profile'}
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.logoutButton}
-                        onPress={handleLogout}
-                        disabled={isLoading.logout}
-                    >
-                        <Text style={styles.logoutButtonText}>
-                            {isLoading.logout ? 'Signing Out...' : 'Sign Out'}
                         </Text>
                     </TouchableOpacity>
                 </ScrollView>
@@ -249,14 +284,8 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flexGrow: 1,
-        padding: 20,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center',
-        color: Colors.light.text,
+        paddingVertical: 64,
+        paddingHorizontal: 20,
     },
     avatarContainer: {
         alignItems: 'center',
@@ -304,18 +333,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: 10,
     },
+    disabledButton: {
+        backgroundColor: Colors.light.black30,
+    },
     updateButtonText: {
-        color: Colors.light.background,
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    logoutButton: {
-        backgroundColor: Colors.light.blue90,
-        padding: 15,
-        borderRadius: 99,
-        alignItems: 'center',
-    },
-    logoutButtonText: {
         color: Colors.light.background,
         fontSize: 18,
         fontWeight: 'bold',
@@ -331,5 +352,8 @@ const styles = StyleSheet.create({
         color: Colors.light.background,
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    logoutButton: {
+        marginRight: 15,
     },
 });

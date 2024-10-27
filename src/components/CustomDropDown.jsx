@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -9,31 +9,43 @@ import {
     Modal,
     SafeAreaView,
     TouchableWithoutFeedback,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
 import { Colors } from '@constants/Colors';
 import { IconSearch } from '@constants/SvgIcons';
+import { useEnquiry } from '@/src/context/enquiryContext';
 
 export const CustomDropDown = ({
-    data,
     onSelect,
     placeholder = 'Select Instrument',
 }) => {
     const [search, setSearch] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
-    const [filteredData, setFilteredData] = useState(data);
+    const [filteredData, setFilteredData] = useState([]);
     const [selectedInstrument, setSelectedInstrument] = useState('');
+    const [refreshing, setRefreshing] = useState(false);
     const searchRef = useRef();
+    const { services, loading, fetchServices } = useEnquiry();
+
+    useEffect(() => {
+        fetchServices();
+    }, [fetchServices]);
+
+    useEffect(() => {
+        setFilteredData(services);
+    }, [services]);
 
     const onSearch = (search) => {
         if (search !== '') {
-            let tempData = data.filter((item) => {
+            let tempData = services.filter((item) => {
                 return (
                     item.name.toLowerCase().indexOf(search.toLowerCase()) > -1
                 );
             });
             setFilteredData(tempData);
         } else {
-            setFilteredData(data);
+            setFilteredData(services);
         }
     };
 
@@ -42,6 +54,12 @@ export const CustomDropDown = ({
         onSearch('');
         setSearch('');
     };
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await fetchServices();
+        setRefreshing(false);
+    }, [fetchServices]);
 
     const renderItem = ({ item }) => (
         <TouchableOpacity
@@ -105,14 +123,28 @@ export const CustomDropDown = ({
                                             }
                                         />
                                     </View>
-                                    <FlatList
-                                        data={filteredData}
-                                        renderItem={renderItem}
-                                        keyExtractor={(item, index) =>
-                                            index.toString()
-                                        }
-                                        ListEmptyComponent={renderEmptyList}
-                                    />
+                                    {loading && !refreshing ? (
+                                        <ActivityIndicator
+                                            size='large'
+                                            color={Colors.light.red90}
+                                        />
+                                    ) : (
+                                        <FlatList
+                                            data={filteredData}
+                                            renderItem={renderItem}
+                                            keyExtractor={(item) => item.id}
+                                            ListEmptyComponent={renderEmptyList}
+                                            refreshControl={
+                                                <RefreshControl
+                                                    refreshing={refreshing}
+                                                    onRefresh={onRefresh}
+                                                    colors={[
+                                                        Colors.light.red90,
+                                                    ]}
+                                                />
+                                            }
+                                        />
+                                    )}
                                     <TouchableOpacity
                                         style={styles.closeButton}
                                         onPress={closeModal}
@@ -202,7 +234,7 @@ const styles = StyleSheet.create({
     closeButton: {
         marginTop: 10,
         paddingVertical: 14,
-        backgroundColor: Colors.light.red60,
+        backgroundColor: Colors.light.red90,
         borderRadius: 99,
         alignItems: 'center',
     },

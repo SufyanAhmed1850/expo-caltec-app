@@ -13,19 +13,30 @@ export default function TabsLayout() {
     return (
         <Tabs
             screenOptions={{
+                headerStyle: {
+                    backgroundColor: Colors.light.red90,
+                },
+                headerTintColor: Colors.light.background,
+                headerTitleStyle: {
+                    fontWeight: 'bold',
+                },
+                headerTitleAlign: 'center',
                 tabBarStyle: {
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: Colors.light.background,
                     height: 72,
+                    borderTopWidth: 1,
+                    borderTopColor: Colors.light.black10,
                 },
                 tabBarHideOnKeyboard: true,
                 tabBarActiveTintColor: Colors.light.red90,
-                tabBarInactiveTintColor: '#9e9e9e',
+                tabBarInactiveTintColor: Colors.light.black30,
                 tabBarShowLabel: false,
             }}
         >
             <Tabs.Screen
                 name='home'
                 options={{
+                    headerShown: false,
                     title: 'Home',
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>

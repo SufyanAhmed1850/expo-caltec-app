@@ -1,10 +1,10 @@
 import { router, Stack } from 'expo-router';
 import React from 'react';
 import { Colors } from '@constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-const UsersStack = () => {
+const ServicesStack = () => {
     return (
         <Stack
             screenOptions={{
@@ -26,10 +26,9 @@ const UsersStack = () => {
                     ) : null,
             }}
         >
-            <Stack.Screen name='index' options={{ title: 'Profile' }} />
-            <Stack.Screen name='usersList' options={{ title: 'Users' }} />
+            <Stack.Screen name='index' options={{ title: 'Enquiries' }} />
         </Stack>
     );
 };
 
-export default UsersStack;
+export default ServicesStack;

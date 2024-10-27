@@ -19,7 +19,7 @@
         "expo-env.d.ts",
         "src/components/HomeIcon.jsx",
         "src/app/_layout.jsx",
-        "src/app/(app)/home.jsx",
+        "src/app/(app)/home/index.jsx",
         "src/app/(app)/_layout.jsx",
         "src/app/(app)/user/index.jsx",
         "src/app/(app)/enquiry/index.jsx",

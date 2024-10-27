@@ -1,19 +1,19 @@
-import { router, Stack } from 'expo-router';
 import React from 'react';
-import { Colors } from '@constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
+import { router, Stack } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Colors } from '@constants/Colors';
 
-const UsersStack = () => {
+const AuthLayout = () => {
     return (
         <Stack
             screenOptions={{
                 headerStyle: { backgroundColor: Colors.light.red90 },
-                headerTitleAlign: 'center',
                 headerTintColor: '#fff',
                 animation: 'slide_from_right',
                 navigationBarColor: Colors.light.background,
                 headerTitleStyle: { fontWeight: 'bold' },
+                headerTitleAlign: 'center',
                 headerLeft: ({ canGoBack }) =>
                     canGoBack ? (
                         <TouchableOpacity onPress={() => router.back()}>
@@ -26,10 +26,20 @@ const UsersStack = () => {
                     ) : null,
             }}
         >
-            <Stack.Screen name='index' options={{ title: 'Profile' }} />
-            <Stack.Screen name='usersList' options={{ title: 'Users' }} />
+            <Stack.Screen
+                name='signIn/index'
+                options={{
+                    title: 'Sign In',
+                }}
+            />
+            <Stack.Screen
+                name='signUp/index'
+                options={{
+                    title: 'Sign Up',
+                }}
+            />
         </Stack>
     );
 };
 
-export default UsersStack;
+export default AuthLayout;

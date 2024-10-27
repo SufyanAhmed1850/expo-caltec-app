@@ -1,5 +1,4 @@
 import { Circle, Path, Svg } from 'react-native-svg';
-import IconSearch from '@assets/icons/light/Search.svg';
 
 const IconHome = ({ width, height, fill, pathStroke }) => {
     return (
@@ -277,6 +276,115 @@ const IconPhone = ({ width, height, fill, pathStroke }) => {
     );
 };
 
+const IconDelete = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                d='M19.325 9.468s-.543 6.735-.858 9.572c-.15 1.355-.987 2.15-2.358 2.174-2.609.047-5.221.05-7.829-.005-1.319-.027-2.142-.83-2.289-2.162-.317-2.862-.857-9.579-.857-9.579M20.708 6.24H3.75m13.69 0a1.65 1.65 0 0 1-1.614-1.324L15.583 3.7a1.28 1.28 0 0 0-1.237-.95h-4.233a1.28 1.28 0 0 0-1.237.95l-.243 1.216A1.65 1.65 0 0 1 7.018 6.24'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
+const IconEdit = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                d='M11.492 2.789H7.753c-3.075 0-5.003 2.177-5.003 5.259v8.314c0 3.082 1.92 5.259 5.003 5.259h8.824c3.085 0 5.004-2.177 5.004-5.26v-4.027'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                clipRule='evenodd'
+                d='M8.828 10.92 16.3 3.449c.93-.93 2.44-.93 3.37 0l1.218 1.217a2.383 2.383 0 0 1 0 3.37l-7.51 7.51a2.17 2.17 0 0 1-1.534.636H8.099l.094-3.78a2.17 2.17 0 0 1 .635-1.48'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                d='m15.165 4.602 4.566 4.566'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
+const IconLocation = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Path
+                clipRule='evenodd'
+                d='M14.5 10.5a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                clipRule='evenodd'
+                d='M12 21c-1.199 0-7.5-5.102-7.5-10.437C4.5 6.387 7.857 3 12 3s7.5 3.387 7.5 7.563C19.5 15.898 13.198 21 12 21'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
+const IconSearch = ({ width, height, fill, pathStroke }) => {
+    return (
+        <Svg
+            width={width || 24}
+            height={height || 24}
+            viewBox={`0 0 24 24`}
+            fill='none'
+        >
+            <Circle
+                cx={11.767}
+                cy={11.767}
+                r={8.989}
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+            <Path
+                d='M18.018 18.485 21.542 22'
+                stroke={pathStroke || '#212121'}
+                strokeWidth={1.5}
+                strokeLinecap='round'
+                strokeLinejoin='round'
+            />
+        </Svg>
+    );
+};
+
 export {
     IconHome,
     IconServices,
@@ -289,4 +397,7 @@ export {
     IconShow,
     IconHide,
     IconPhone,
+    IconDelete,
+    IconEdit,
+    IconLocation,
 };

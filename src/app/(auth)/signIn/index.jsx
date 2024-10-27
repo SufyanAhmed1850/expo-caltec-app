@@ -10,13 +10,16 @@ import {
     Platform,
     Alert,
     SafeAreaView,
-    Pressable,
+    Image,
+    ActivityIndicator,
+    Dimensions,
 } from 'react-native';
 import { useAuth } from '@context/authContext';
 import { useRouter } from 'expo-router';
 import { Colors } from '@constants/Colors';
 import { IconMail, IconLock, IconShow, IconHide } from '@constants/SvgIcons';
 
+const { width } = Dimensions.get('window');
 const SignIn = () => {
     const { login } = useAuth();
     const router = useRouter();
@@ -57,7 +60,11 @@ const SignIn = () => {
                 style={styles.container}
             >
                 <ScrollView contentContainerStyle={styles.scrollView}>
-                    <Text style={styles.title}>Sign In</Text>
+                    <Image
+                        source={require('@assets/images/logo.png')}
+                        style={styles.logo}
+                        resizeMode='contain'
+                    />
                     <View style={styles.inputContainer}>
                         <View style={styles.inputWrapper}>
                             <IconMail
@@ -67,7 +74,7 @@ const SignIn = () => {
                             />
                             <TextInput
                                 style={styles.input}
-                                placeholder='Email'
+                                placeholder='Enter your email'
                                 placeholderTextColor={Colors.light.black30}
                                 value={email}
                                 onChangeText={setEmail}
@@ -83,7 +90,7 @@ const SignIn = () => {
                             />
                             <TextInput
                                 style={styles.input}
-                                placeholder='Password'
+                                placeholder='Enter your password'
                                 placeholderTextColor={Colors.light.black30}
                                 value={password}
                                 onChangeText={setPassword}
@@ -108,15 +115,19 @@ const SignIn = () => {
                             </TouchableOpacity>
                         </View>
                     </View>
-                    <Pressable
+                    <TouchableOpacity
                         style={styles.button}
                         onPress={handleSignIn}
                         disabled={isLoading}
                     >
-                        <Text style={styles.buttonText}>
-                            {isLoading ? 'Signing In...' : 'Sign In'}
-                        </Text>
-                    </Pressable>
+                        {isLoading ? (
+                            <ActivityIndicator
+                                color={Colors.light.background}
+                            />
+                        ) : (
+                            <Text style={styles.buttonText}>Sign In</Text>
+                        )}
+                    </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.signUpButton}
                         onPress={handleSignUpRedirect}
@@ -140,16 +151,14 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollView: {
-        flexGrow: 1,
         justifyContent: 'center',
-        padding: 20,
+        padding: 24,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center',
-        color: Colors.light.text,
+    logo: {
+        marginVertical: 46,
+        alignSelf: 'center',
+        width: width * 0.6,
+        height: width * 0.2,
     },
     inputContainer: {
         marginBottom: 20,
@@ -161,7 +170,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Colors.light.black30,
         borderRadius: 99,
-        marginBottom: 10,
+        marginBottom: 16,
         padding: 14,
     },
     input: {

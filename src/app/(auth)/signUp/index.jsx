@@ -11,6 +11,8 @@ import {
     Alert,
     SafeAreaView,
     Image,
+    ActivityIndicator,
+    Dimensions,
 } from 'react-native';
 import { useAuth } from '@context/authContext';
 import { useRouter } from 'expo-router';
@@ -26,6 +28,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 
+const { width } = Dimensions.get('window');
+
 const SignUp = () => {
     const { register } = useAuth();
     const router = useRouter();
@@ -36,7 +40,7 @@ const SignUp = () => {
     const [name, setName] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [phone, setPhone] = useState('');
-    const [role, setRole] = useState('user'); // Default role
+    const [role, setRole] = useState('user');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [profileImage, setProfileImage] = useState(null);
@@ -72,6 +76,8 @@ const SignUp = () => {
         setIsLoading(false);
         if (!response.success) {
             Alert.alert('Sign Up', response.msg, [{ text: 'OK' }]);
+        } else {
+            router.replace('signIn');
         }
     };
 
@@ -117,7 +123,11 @@ const SignUp = () => {
                 style={styles.container}
             >
                 <ScrollView contentContainerStyle={styles.scrollView}>
-                    <Text style={styles.title}>Sign Up</Text>
+                    <Image
+                        source={require('@assets/images/logo.png')}
+                        style={styles.logo}
+                        resizeMode='contain'
+                    />
                     <TouchableOpacity
                         style={styles.imageUpload}
                         onPress={handleImagePick}
@@ -134,9 +144,7 @@ const SignUp = () => {
                                     height={40}
                                     pathStroke={Colors.light.black30}
                                 />
-                                <Text style={styles.uploadText}>
-                                    Upload Profile Picture
-                                </Text>
+                                <Text style={styles.uploadText}>Profile</Text>
                             </View>
                         )}
                     </TouchableOpacity>
@@ -271,9 +279,13 @@ const SignUp = () => {
                         onPress={handleSignUp}
                         disabled={isLoading}
                     >
-                        <Text style={styles.buttonText}>
-                            {isLoading ? 'Signing Up...' : 'Sign Up'}
-                        </Text>
+                        {isLoading ? (
+                            <ActivityIndicator
+                                color={Colors.light.background}
+                            />
+                        ) : (
+                            <Text style={styles.buttonText}>Sign Up</Text>
+                        )}
                     </TouchableOpacity>
                     <TouchableOpacity
                         style={styles.loginButton}
@@ -300,14 +312,13 @@ const styles = StyleSheet.create({
     scrollView: {
         flexGrow: 1,
         justifyContent: 'center',
-        padding: 20,
+        padding: 24,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center',
-        color: Colors.light.text,
+    logo: {
+        width: width * 0.6,
+        height: width * 0.2,
+        alignSelf: 'center',
+        marginVertical: 24,
     },
     imageUpload: {
         alignItems: 'center',
@@ -341,7 +352,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: Colors.light.black30,
         borderRadius: 99,
-        marginBottom: 10,
+        marginBottom: 16,
         padding: 14,
     },
     input: {

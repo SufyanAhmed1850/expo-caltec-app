@@ -1,96 +1,93 @@
-import instrumentsList from '@/data';
-import { Colors } from '@constants/Colors';
-import { IconArrowRight } from '@constants/SvgIcons';
-import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-    Animated,
-    FlatList,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
     View,
+    Text,
+    StyleSheet,
+    FlatList,
+    TouchableOpacity,
+    Modal,
+    TextInput,
+    ActivityIndicator,
+    RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors } from '@constants/Colors';
+import { useAuth } from '@/src/context/authContext';
+import { useService } from '@/src/context/serviceContext';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
 
 export default function ServicesPage() {
-    const [categories, setCategories] = useState([]);
-    const [isNavigating, setIsNavigating] = useState(false);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [newService, setNewService] = useState({
+        category: '',
+        name: '',
+        price: '',
+    });
+    const [refreshing, setRefreshing] = useState(false);
+    const { user } = useAuth();
+    const { categories, loading, fetchServices, addService } = useService();
+    const router = useRouter();
 
     useEffect(() => {
-        const categoryCounts = instrumentsList.reduce((acc, instrument) => {
-            acc[instrument.category] = (acc[instrument.category] || 0) + 1;
-            return acc;
-        }, {});
+        fetchServices();
+    }, [fetchServices]);
 
-        const categoryData = Object.entries(categoryCounts).map(
-            ([name, count]) => ({
-                name,
-                count,
-                scale: new Animated.Value(1),
-            })
-        );
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        try {
+            await fetchServices();
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to refresh services',
+            });
+        } finally {
+            setRefreshing(false);
+        }
+    }, [fetchServices]);
 
-        setCategories(categoryData);
-    }, []);
-
-    const handlePressIn = (scale) => {
-        Animated.spring(scale, {
-            toValue: 0.95,
-            useNativeDriver: true,
-        }).start();
+    const handleAddService = async () => {
+        const success = await addService(newService);
+        if (success) {
+            setModalVisible(false);
+            setNewService({ category: '', name: '', price: '' });
+            Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Service added successfully',
+            });
+        }
     };
 
-    const handlePressOut = (scale) => {
-        Animated.spring(scale, {
-            toValue: 1,
-            friction: 3,
-            tension: 32,
-            useNativeDriver: true,
-        }).start();
-    };
-
-    const navigateToCategory = useCallback(
-        (category) => {
-            if (!isNavigating) {
-                setIsNavigating(true);
-                router.push({
-                    pathname: '/services/[category]',
-                    params: { category: category },
-                });
-                setTimeout(() => setIsNavigating(false), 500); // Reset after 1 second
-            }
-        },
-        [isNavigating]
-    );
-
-    const renderCategoryItem = ({ item, index }) => (
+    const renderCategoryItem = ({ item }) => (
         <TouchableOpacity
-            activeOpacity={1}
-            onPressIn={() => handlePressIn(item.scale)}
-            onPressOut={() => handlePressOut(item.scale)}
-            onPress={() => navigateToCategory(item.name)}
-            disabled={isNavigating}
+            style={styles.categoryItem}
+            onPress={() => router.push(`/services/${item.name}`)}
         >
-            <Animated.View
-                style={[
-                    styles.categoryItem,
-                    { transform: [{ scale: item.scale }] },
-                    isNavigating && styles.categoryItemDisabled,
-                ]}
-            >
-                <View style={styles.categoryContent}>
-                    <View>
-                        <Text style={styles.categoryName}>{item.name}</Text>
-                        <Text style={styles.categoryCount}>
-                            {item.count} services
-                        </Text>
-                    </View>
-                    <IconArrowRight size={24} pathStroke={Colors.light.red60} />
-                </View>
-            </Animated.View>
+            <View style={styles.categoryContent}>
+                <Text style={styles.categoryName}>{item.name}</Text>
+                <Text style={styles.categoryCount}>
+                    {item.servicesCount} services
+                </Text>
+            </View>
+            <Ionicons
+                name='chevron-forward'
+                size={24}
+                color={Colors.light.red60}
+            />
         </TouchableOpacity>
     );
+
+    if (loading && !refreshing) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size='large' color={Colors.light.red90} />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.safeArea}>
@@ -102,8 +99,90 @@ export default function ServicesPage() {
                     keyExtractor={(item) => item.name}
                     contentContainerStyle={styles.listContainer}
                     showsVerticalScrollIndicator={false}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={refreshing}
+                            onRefresh={onRefresh}
+                            colors={[Colors.light.red90]}
+                        />
+                    }
+                    ListEmptyComponent={
+                        <Text style={styles.emptyListText}>
+                            No services available
+                        </Text>
+                    }
                 />
+                {user && user.role === 'admin' && (
+                    <TouchableOpacity
+                        style={styles.floatingButton}
+                        onPress={() => setModalVisible(true)}
+                    >
+                        <Ionicons name='add' size={24} color='white' />
+                        <Text style={styles.floatingButtonText}>
+                            Add Service
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
+
+            <Modal
+                animationType='fade'
+                transparent={true}
+                statusBarTranslucent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <View style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Add New Service</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Service Category'
+                            value={newService.category}
+                            onChangeText={(text) =>
+                                setNewService({ ...newService, category: text })
+                            }
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Service Name'
+                            value={newService.name}
+                            onChangeText={(text) =>
+                                setNewService({ ...newService, name: text })
+                            }
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder='Service Price'
+                            value={newService.price}
+                            onChangeText={(text) =>
+                                setNewService({ ...newService, price: text })
+                            }
+                            keyboardType='numeric'
+                        />
+                        <TouchableOpacity
+                            style={styles.addButton}
+                            onPress={handleAddService}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <ActivityIndicator color='white' />
+                            ) : (
+                                <Text style={styles.addButtonText}>
+                                    Save Service
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={styles.cancelButton}
+                            onPress={() => setModalVisible(false)}
+                        >
+                            <Text style={styles.cancelButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+            <Toast />
         </SafeAreaView>
     );
 }
@@ -111,45 +190,117 @@ export default function ServicesPage() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: '#FFF',
+        backgroundColor: Colors.light.background,
     },
     container: {
         flex: 1,
+        paddingBottom: 44,
+        paddingHorizontal: 20,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     title: {
-        margin: 20,
+        marginBottom: 20,
         fontSize: 24,
         fontWeight: 'bold',
         color: Colors.light.text,
     },
     listContainer: {
         flexGrow: 1,
-        paddingHorizontal: 20,
-        paddingBottom: 100,
-        gap: 12,
     },
     categoryItem: {
-        backgroundColor: '#F5F5F5',
-        borderRadius: 16,
-        paddingVertical: 12,
-        paddingHorizontal: 18,
-    },
-    categoryItemDisabled: {
-        opacity: 0.5,
-    },
-    categoryContent: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        backgroundColor: Colors.light.cardBg,
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+    },
+    categoryContent: {
+        flex: 1,
     },
     categoryName: {
         fontSize: 18,
         fontWeight: 'bold',
         color: Colors.light.text,
-        marginBottom: 4,
     },
     categoryCount: {
         fontSize: 14,
         color: Colors.light.red60,
+        marginTop: 4,
+    },
+    floatingButton: {
+        position: 'absolute',
+        right: 20,
+        bottom: 20,
+        backgroundColor: Colors.light.red90,
+        borderRadius: 30,
+        padding: 15,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    floatingButtonText: {
+        color: 'white',
+        marginLeft: 8,
+        fontWeight: 'bold',
+    },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        width: '80%',
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 24,
+        textAlign: 'center',
+    },
+    input: {
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: Colors.light.black30,
+        borderRadius: 99,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        color: Colors.light.text,
+        marginBottom: 15,
+    },
+    addButton: {
+        marginTop: 10,
+        paddingVertical: 14,
+        backgroundColor: Colors.light.red90,
+        borderRadius: 99,
+        alignItems: 'center',
+    },
+    addButtonText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+    cancelButton: {
+        marginTop: 10,
+        paddingVertical: 14,
+        backgroundColor: Colors.light.cardBg,
+        borderRadius: 99,
+        alignItems: 'center',
+    },
+    cancelButtonText: {
+        color: Colors.light.red90,
+    },
+    emptyListText: {
+        textAlign: 'center',
+        marginTop: 20,
+        fontSize: 16,
+        color: Colors.light.black60,
     },
 });

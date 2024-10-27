@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,13 +9,19 @@ import {
     KeyboardAvoidingView,
     Platform,
     SafeAreaView,
+    ActivityIndicator,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Colors } from '@constants/Colors';
-import instrumentsList from '@/data';
 import CustomDropDown from '@components/CustomDropDown';
+import { useEnquiry } from '@/src/context/enquiryContext';
+import { useAuth } from '@/src/context/authContext';
+import Toast from 'react-native-toast-message';
+import LogoHeader from '@/src/components/LogoHeader';
 
-export default function Enquiry() {
+export default function Component() {
+    const { user } = useAuth();
+    const { services, submitEnquiry } = useEnquiry();
     const [formData, setFormData] = useState({
         companyName: '',
         address: '',
@@ -25,14 +31,45 @@ export default function Enquiry() {
         fax: '',
         email: '',
         placeOfCalibration: 'Site',
-        instruments: [{ name: '', quantity: '' }],
+        instruments: [{ name: '', quantity: '', price: 0 }],
         comments: '',
+        totalAmount: null,
+        status: 'Pending',
     });
+    const [submittedEnquiryNumber, setSubmittedEnquiryNumber] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    useEffect(() => {
+        // Set default values based on logged-in user's information
+        if (user) {
+            setFormData((prevData) => ({
+                ...prevData,
+                companyName: user.companyName || '',
+                contactPerson: user.name || '',
+                phone: user.phone || '',
+                email: user.email || '',
+            }));
+        }
+    }, [user]);
+
+    useEffect(() => {
+        calculateTotalAmount();
+    }, [formData.instruments]);
+
+    const calculateTotalAmount = () => {
+        const total = formData.instruments.reduce((sum, instrument) => {
+            return sum + instrument.price * instrument.quantity;
+        }, 0);
+        setFormData((prev) => ({ ...prev, totalAmount: total }));
+    };
 
     const addInstrument = () => {
         setFormData({
             ...formData,
-            instruments: [...formData.instruments, { name: '', quantity: '' }],
+            instruments: [
+                ...formData.instruments,
+                { name: '', quantity: '', price: 0 },
+            ],
         });
     };
 
@@ -47,15 +84,74 @@ export default function Enquiry() {
     };
 
     const updateInstrument = (index, field, value) => {
-        const updatedInstruments = formData.instruments.map((instrument, i) =>
-            i === index ? { ...instrument, [field]: value } : instrument
-        );
+        const updatedInstruments = formData.instruments.map((instrument, i) => {
+            if (i === index) {
+                const updatedInstrument = { ...instrument, [field]: value };
+                if (field === 'name') {
+                    const selectedService = services.find(
+                        (service) => service.name === value
+                    );
+                    updatedInstrument.price = selectedService
+                        ? selectedService.price
+                        : 0;
+                }
+                return updatedInstrument;
+            }
+            return instrument;
+        });
         setFormData({ ...formData, instruments: updatedInstruments });
     };
 
-    const handleSubmit = () => {
-        console.log('Form submitted:', formData);
-        // Here you would typically send the data to your backend
+    const isFormValid = () => {
+        return (
+            formData.companyName &&
+            formData.address &&
+            formData.contactPerson &&
+            formData.designation &&
+            formData.phone &&
+            formData.fax &&
+            formData.email &&
+            formData.instruments.every((i) => i.name && i.quantity)
+        );
+    };
+
+    const handleSubmit = async () => {
+        if (!isFormValid()) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Please fill all required fields',
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        const enquiryData = {
+            ...formData,
+            userId: user.uid,
+            userName: user.name,
+            timestamp: new Date().toISOString(),
+        };
+
+        const success = await submitEnquiry(enquiryData);
+        setIsSubmitting(false);
+        if (success) {
+            setSubmittedEnquiryNumber(enquiryData.enquiryNumber);
+            setFormData({
+                companyName: user.companyName || '',
+                address: '',
+                contactPerson: user.name || '',
+                designation: '',
+                phone: user.phone || '',
+                fax: '',
+                email: user.email || '',
+                placeOfCalibration: 'Site',
+                instruments: [{ name: '', quantity: '', price: 0 }],
+                comments: '',
+                totalAmount: 0,
+                status: 'Pending',
+            });
+        }
     };
 
     return (
@@ -69,8 +165,17 @@ export default function Enquiry() {
                     contentContainerStyle={styles.scrollViewContent}
                     keyboardShouldPersistTaps='handled'
                 >
-                    <Text style={styles.title}>Enquiry</Text>
-
+                    <LogoHeader />
+                    {submittedEnquiryNumber && (
+                        <View style={styles.successMessage}>
+                            <Text style={styles.successText}>
+                                Enquiry submitted successfully!
+                            </Text>
+                            <Text style={styles.enquiryNumberText}>
+                                Enquiry Number: {submittedEnquiryNumber}
+                            </Text>
+                        </View>
+                    )}
                     <TextInput
                         style={styles.input}
                         placeholder='Company Name'
@@ -155,7 +260,6 @@ export default function Enquiry() {
                     {formData.instruments.map((instrument, index) => (
                         <View key={index} style={styles.instrumentRow}>
                             <CustomDropDown
-                                data={instrumentsList}
                                 onSelect={(selectedName) =>
                                     updateInstrument(
                                         index,
@@ -169,7 +273,7 @@ export default function Enquiry() {
                                 style={[styles.input, styles.quantityInput]}
                                 placeholder='Qty.'
                                 placeholderTextColor={Colors.light.black30}
-                                value={instrument.quantity}
+                                value={instrument.quantity.toString()}
                                 onChangeText={(text) =>
                                     updateInstrument(index, 'quantity', text)
                                 }
@@ -192,7 +296,6 @@ export default function Enquiry() {
                             )}
                         </View>
                     ))}
-
                     <TextInput
                         style={[styles.input, styles.commentsInput]}
                         placeholder='Comments'
@@ -203,15 +306,45 @@ export default function Enquiry() {
                         }
                         multiline
                     />
+                    <View style={styles.totalAmountContainer}>
+                        <Text style={styles.totalAmountLabel}>
+                            Total Amount:
+                        </Text>
+                        <View style={styles.totalAmountInputContainer}>
+                            <Text style={styles.currencySymbol}>Rs. </Text>
+                            <TextInput
+                                style={styles.totalAmountInput}
+                                value={formData.totalAmount?.toFixed(0)}
+                                onChangeText={(text) =>
+                                    setFormData({
+                                        ...formData,
+                                        totalAmount: parseFloat(text) || null,
+                                    })
+                                }
+                                keyboardType='numeric'
+                            />
+                        </View>
+                    </View>
 
                     <TouchableOpacity
-                        style={styles.submitButton}
+                        style={[
+                            styles.submitButton,
+                            !isFormValid() && styles.disabledButton,
+                        ]}
                         onPress={handleSubmit}
+                        disabled={!isFormValid() || isSubmitting}
                     >
-                        <Text style={styles.submitButtonText}>SUBMIT</Text>
+                        {isSubmitting ? (
+                            <ActivityIndicator
+                                color={Colors.light.background}
+                            />
+                        ) : (
+                            <Text style={styles.submitButtonText}>SUBMIT</Text>
+                        )}
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
+            <Toast />
         </SafeAreaView>
     );
 }
@@ -295,9 +428,41 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: 20,
     },
+    disabledButton: {
+        backgroundColor: Colors.light.black30,
+    },
     submitButtonText: {
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    totalAmountContainer: {
+        marginTop: 20,
+    },
+    totalAmountLabel: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: Colors.light.text,
+        marginBottom: 8,
+    },
+    totalAmountInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: Colors.light.cardBg,
+        borderRadius: 99,
+        paddingHorizontal: 16,
+    },
+    currencySymbol: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: Colors.light.red90,
+    },
+    totalAmountInput: {
+        flex: 1,
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: Colors.light.red90,
+        paddingVertical: 12,
+        paddingLeft: 8,
     },
 });
