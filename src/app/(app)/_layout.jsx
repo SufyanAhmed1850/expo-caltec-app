@@ -34,9 +34,8 @@ export default function TabsLayout() {
             }}
         >
             <Tabs.Screen
-                name='home'
+                name='home/index'
                 options={{
-                    headerShown: false,
                     title: 'Home',
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>
@@ -78,8 +77,9 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name='enquiry/index'
+                name='enquiry'
                 options={{
+                    headerShown: false,
                     title: 'Enquiry',
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>

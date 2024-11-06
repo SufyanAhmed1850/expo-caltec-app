@@ -203,6 +203,19 @@ export const AuthContextProvider = ({ children }) => {
             return { success: false, msg: error.message };
         }
     };
+    const resetPassword = async (email) => {
+        try {
+            await sendPasswordResetEmail(auth, email);
+            return { success: true };
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            let msg = error.message;
+            if (msg.includes('auth/user-not-found')) {
+                msg = 'No user found with this email address';
+            }
+            return { success: false, msg };
+        }
+    };
 
     return (
         <AuthContext.Provider
@@ -215,6 +228,7 @@ export const AuthContextProvider = ({ children }) => {
                 register,
                 updateProfile,
                 refreshUserData,
+                resetPassword,
             }}
         >
             {children}

@@ -4,6 +4,7 @@ import { AuthContextProvider, useAuth } from '@context/authContext';
 import { ServiceProvider } from '@context/serviceContext';
 import { EnquiryProvider } from '@context/enquiryContext';
 import LoadingScreen from '@components/LoadingScreen';
+import { Provider as PaperProvider } from 'react-native-paper';
 
 const MainLayout = () => {
     const { isAuthenticated } = useAuth();
@@ -23,18 +24,18 @@ const MainLayout = () => {
 
         const inAuthGroup = segments[0] === '(auth)';
         const isNotFound = segments[0] === '+not-found';
-        const isOnboarding = segments[0] === 'onboarding';
+        const requiresAuth =
+            segments.includes('user') || segments.includes('enquiry');
 
-        if (isAuthenticated === true) {
-            // User is signed in
-            if (inAuthGroup || isNotFound || isOnboarding) {
-                router.replace('/(app)/home');
-            }
-        } else if (isAuthenticated === false) {
-            // User is signed out
-            if ((!inAuthGroup && !isOnboarding) || isNotFound) {
-                router.replace('/onboarding');
-            }
+        if (isAuthenticated === false && requiresAuth) {
+            // User is not signed in but tries to access protected routes
+            router.replace('/(auth)/signIn');
+        } else if (isAuthenticated === true && inAuthGroup) {
+            // User is signed in but on auth routes
+            router.replace('/(app)/home');
+        } else if (isNotFound) {
+            // Handle not found routes
+            router.replace('/(app)/home');
         }
     }, [isAuthenticated, segments, isReady, router]);
 
@@ -50,7 +51,9 @@ const RootLayout = () => {
         <AuthContextProvider>
             <ServiceProvider>
                 <EnquiryProvider>
-                    <MainLayout />
+                    <PaperProvider>
+                        <MainLayout />
+                    </PaperProvider>
                 </EnquiryProvider>
             </ServiceProvider>
         </AuthContextProvider>

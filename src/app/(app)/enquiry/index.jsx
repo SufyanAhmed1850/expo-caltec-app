@@ -1,468 +1,282 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
-    Text,
-    TextInput,
-    ScrollView,
-    TouchableOpacity,
     StyleSheet,
-    KeyboardAvoidingView,
+    FlatList,
+    TouchableOpacity,
+    Text,
+    ScrollView,
     Platform,
-    SafeAreaView,
-    ActivityIndicator,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { Colors } from '@constants/Colors';
-import CustomDropDown from '@components/CustomDropDown';
-import { useEnquiry } from '@/src/context/enquiryContext';
+import {
+    Searchbar,
+    Menu,
+    AnimatedFAB,
+    TouchableRipple,
+} from 'react-native-paper';
+import { useNavigation, useRouter } from 'expo-router';
+import {
+    collection,
+    onSnapshot,
+    orderBy,
+    query,
+    where,
+} from 'firebase/firestore';
+import { db } from '@/firebaseConfig';
 import { useAuth } from '@/src/context/authContext';
-import Toast from 'react-native-toast-message';
-import LogoHeader from '@/src/components/LogoHeader';
+import { Colors } from '@/src/constants/Colors';
+import StatusPill from '@/src/components/StatusPill';
 
-export default function Component() {
+export default function EnquiryList() {
+    const [enquiries, setEnquiries] = useState([]);
+    const [filteredEnquiries, setFilteredEnquiries] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All');
+    const [visible, setVisible] = useState(false);
+    const [isExtended, setIsExtended] = useState(true);
     const { user } = useAuth();
-    const { services, submitEnquiry } = useEnquiry();
-    const [formData, setFormData] = useState({
-        companyName: '',
-        address: '',
-        contactPerson: '',
-        designation: '',
-        phone: '',
-        fax: '',
-        email: '',
-        placeOfCalibration: 'Site',
-        instruments: [{ name: '', quantity: '', price: 0 }],
-        comments: '',
-        totalAmount: null,
-        status: 'Pending',
-    });
-    const [submittedEnquiryNumber, setSubmittedEnquiryNumber] = useState(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const router = useRouter();
+    const navigation = useNavigation();
 
-    useEffect(() => {
-        // Set default values based on logged-in user's information
-        if (user) {
-            setFormData((prevData) => ({
-                ...prevData,
-                companyName: user.companyName || '',
-                contactPerson: user.name || '',
-                phone: user.phone || '',
-                email: user.email || '',
-            }));
+    const openMenu = () => setVisible(true);
+    const closeMenu = () => setVisible(false);
+
+    const fetchEnquiries = useCallback(() => {
+        const enquiriesRef = collection(db, 'enquiries');
+        let q = query(enquiriesRef, orderBy('timestamp', 'desc'));
+
+        if (user?.role !== 'admin') {
+            q = query(q, where('userId', '==', user?.uid));
         }
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const fetchedEnquiries = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setEnquiries(fetchedEnquiries);
+            setFilteredEnquiries(fetchedEnquiries);
+        });
+
+        return unsubscribe;
     }, [user]);
 
     useEffect(() => {
-        calculateTotalAmount();
-    }, [formData.instruments]);
+        const unsubscribe = fetchEnquiries();
+        return () => unsubscribe();
+    }, [fetchEnquiries]);
 
-    const calculateTotalAmount = () => {
-        const total = formData.instruments.reduce((sum, instrument) => {
-            return sum + instrument.price * instrument.quantity;
-        }, 0);
-        setFormData((prev) => ({ ...prev, totalAmount: total }));
-    };
-
-    const addInstrument = () => {
-        setFormData({
-            ...formData,
-            instruments: [
-                ...formData.instruments,
-                { name: '', quantity: '', price: 0 },
-            ],
+    useEffect(() => {
+        const filtered = enquiries.filter((enquiry) => {
+            const matchesSearch = Object.values(enquiry).some((value) =>
+                value
+                    .toString()
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase())
+            );
+            const matchesStatus =
+                statusFilter === 'All' || enquiry.status === statusFilter;
+            return matchesSearch && matchesStatus;
         });
-    };
+        setFilteredEnquiries(filtered);
+    }, [searchQuery, statusFilter, enquiries]);
 
-    const removeInstrument = (index) => {
-        const updatedInstruments = formData.instruments.filter(
-            (_, i) => i !== index
-        );
-        setFormData({
-            ...formData,
-            instruments: updatedInstruments,
-        });
-    };
+    const renderItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.enquiryItem}
+            onPress={() => router.push(`/enquiry/${item.enquiryNumber}`)}
+        >
+            <View style={styles.enquiryHeader}>
+                <Text style={styles.enquiryNumber}>{item.enquiryNumber}</Text>
+                <Text style={styles.enquiryDate}>
+                    {new Date(item.timestamp).toLocaleDateString()}
+                </Text>
+            </View>
+            <Text style={styles.customerName}>{item.userName}</Text>
+            <View style={styles.enquiryFooter}>
+                <Text style={styles.amount}>
+                    PKR {item.totalAmount.toLocaleString()}
+                </Text>
+                <StatusPill status={item.status} />
+            </View>
+        </TouchableOpacity>
+    );
 
-    const updateInstrument = (index, field, value) => {
-        const updatedInstruments = formData.instruments.map((instrument, i) => {
-            if (i === index) {
-                const updatedInstrument = { ...instrument, [field]: value };
-                if (field === 'name') {
-                    const selectedService = services.find(
-                        (service) => service.name === value
-                    );
-                    updatedInstrument.price = selectedService
-                        ? selectedService.price
-                        : 0;
-                }
-                return updatedInstrument;
-            }
-            return instrument;
-        });
-        setFormData({ ...formData, instruments: updatedInstruments });
-    };
+    const onScroll = ({ nativeEvent }) => {
+        const currentScrollPosition =
+            Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
 
-    const isFormValid = () => {
-        return (
-            formData.companyName &&
-            formData.address &&
-            formData.contactPerson &&
-            formData.designation &&
-            formData.phone &&
-            formData.fax &&
-            formData.email &&
-            formData.instruments.every((i) => i.name && i.quantity)
-        );
-    };
-
-    const handleSubmit = async () => {
-        if (!isFormValid()) {
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Please fill all required fields',
-            });
-            return;
-        }
-
-        setIsSubmitting(true);
-        const enquiryData = {
-            ...formData,
-            userId: user.uid,
-            userName: user.name,
-            timestamp: new Date().toISOString(),
-        };
-
-        const success = await submitEnquiry(enquiryData);
-        setIsSubmitting(false);
-        if (success) {
-            setSubmittedEnquiryNumber(enquiryData.enquiryNumber);
-            setFormData({
-                companyName: user.companyName || '',
-                address: '',
-                contactPerson: user.name || '',
-                designation: '',
-                phone: user.phone || '',
-                fax: '',
-                email: user.email || '',
-                placeOfCalibration: 'Site',
-                instruments: [{ name: '', quantity: '', price: 0 }],
-                comments: '',
-                totalAmount: 0,
-                status: 'Pending',
-            });
-        }
+        setIsExtended(currentScrollPosition <= 0);
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={9999}
-                style={styles.container}
-            >
-                <ScrollView
-                    contentContainerStyle={styles.scrollViewContent}
-                    keyboardShouldPersistTaps='handled'
-                >
-                    <LogoHeader />
-                    {submittedEnquiryNumber && (
-                        <View style={styles.successMessage}>
-                            <Text style={styles.successText}>
-                                Enquiry submitted successfully!
-                            </Text>
-                            <Text style={styles.enquiryNumberText}>
-                                Enquiry Number: {submittedEnquiryNumber}
-                            </Text>
-                        </View>
-                    )}
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Company Name'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.companyName}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, companyName: text })
-                        }
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Address'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.address}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, address: text })
-                        }
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Contact Person'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.contactPerson}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, contactPerson: text })
-                        }
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Designation'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.designation}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, designation: text })
-                        }
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Phone'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.phone}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, phone: text })
-                        }
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Fax'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.fax}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, fax: text })
-                        }
-                    />
-                    <TextInput
-                        style={styles.input}
-                        placeholder='Email Address'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.email}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, email: text })
-                        }
-                    />
-
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={formData.placeOfCalibration}
-                            style={styles.picker}
-                            onValueChange={(itemValue) =>
-                                setFormData({
-                                    ...formData,
-                                    placeOfCalibration: itemValue,
-                                })
-                            }
+        <View style={styles.container}>
+            <View style={styles.searchContainer}>
+                <Searchbar
+                    placeholder='Search enquiries'
+                    onChangeText={setSearchQuery}
+                    value={searchQuery}
+                    style={styles.searchBar}
+                    inputStyle={styles.searchInput}
+                    iconColor={Colors.light.black30}
+                    placeholderTextColor={Colors.light.black30}
+                    rippleColor={Colors.light.red30}
+                    selectionColor={Colors.light.black30}
+                />
+                <Menu
+                    visible={visible}
+                    onDismiss={closeMenu}
+                    anchor={
+                        <TouchableRipple
+                            onPress={openMenu}
+                            style={styles.filterButton}
+                            rippleColor={Colors.light.black10}
+                            borderless={true}
                         >
-                            <Picker.Item label='Site' value='Site' />
-                            <Picker.Item label='Lab' value='Lab' />
-                            <Picker.Item label='Both' value='Both' />
-                        </Picker>
-                    </View>
-
-                    {formData.instruments.map((instrument, index) => (
-                        <View key={index} style={styles.instrumentRow}>
-                            <CustomDropDown
-                                onSelect={(selectedName) =>
-                                    updateInstrument(
-                                        index,
-                                        'name',
-                                        selectedName
-                                    )
-                                }
-                                placeholder='Select Instrument'
-                            />
-                            <TextInput
-                                style={[styles.input, styles.quantityInput]}
-                                placeholder='Qty.'
-                                placeholderTextColor={Colors.light.black30}
-                                value={instrument.quantity.toString()}
-                                onChangeText={(text) =>
-                                    updateInstrument(index, 'quantity', text)
-                                }
-                                keyboardType='numeric'
-                            />
-                            {index === formData.instruments.length - 1 ? (
-                                <TouchableOpacity
-                                    style={styles.addButton}
-                                    onPress={addInstrument}
-                                >
-                                    <Text style={styles.buttonText}>+</Text>
-                                </TouchableOpacity>
-                            ) : (
-                                <TouchableOpacity
-                                    style={styles.removeButton}
-                                    onPress={() => removeInstrument(index)}
-                                >
-                                    <Text style={styles.buttonText}>-</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    ))}
-                    <TextInput
-                        style={[styles.input, styles.commentsInput]}
-                        placeholder='Comments'
-                        placeholderTextColor={Colors.light.black30}
-                        value={formData.comments}
-                        onChangeText={(text) =>
-                            setFormData({ ...formData, comments: text })
-                        }
-                        multiline
+                            <Text style={styles.filterButtonLabel}>
+                                {statusFilter}
+                            </Text>
+                        </TouchableRipple>
+                    }
+                    contentStyle={styles.menuContent}
+                >
+                    <Menu.Item
+                        onPress={() => {
+                            setStatusFilter('All');
+                            closeMenu();
+                        }}
+                        title='All'
+                        titleStyle={styles.menuItemText}
                     />
-                    <View style={styles.totalAmountContainer}>
-                        <Text style={styles.totalAmountLabel}>
-                            Total Amount:
-                        </Text>
-                        <View style={styles.totalAmountInputContainer}>
-                            <Text style={styles.currencySymbol}>Rs. </Text>
-                            <TextInput
-                                style={styles.totalAmountInput}
-                                value={formData.totalAmount?.toFixed(0)}
-                                onChangeText={(text) =>
-                                    setFormData({
-                                        ...formData,
-                                        totalAmount: parseFloat(text) || null,
-                                    })
-                                }
-                                keyboardType='numeric'
-                            />
-                        </View>
-                    </View>
-
-                    <TouchableOpacity
-                        style={[
-                            styles.submitButton,
-                            !isFormValid() && styles.disabledButton,
-                        ]}
-                        onPress={handleSubmit}
-                        disabled={!isFormValid() || isSubmitting}
-                    >
-                        {isSubmitting ? (
-                            <ActivityIndicator
-                                color={Colors.light.background}
-                            />
-                        ) : (
-                            <Text style={styles.submitButtonText}>SUBMIT</Text>
-                        )}
-                    </TouchableOpacity>
-                </ScrollView>
-            </KeyboardAvoidingView>
-            <Toast />
-        </SafeAreaView>
+                    <Menu.Item
+                        onPress={() => {
+                            setStatusFilter('Pending');
+                            closeMenu();
+                        }}
+                        title='Pending'
+                        titleStyle={styles.menuItemText}
+                    />
+                    <Menu.Item
+                        onPress={() => {
+                            setStatusFilter('Approved');
+                            closeMenu();
+                        }}
+                        title='Approved'
+                        titleStyle={styles.menuItemText}
+                    />
+                    <Menu.Item
+                        onPress={() => {
+                            setStatusFilter('Declined');
+                            closeMenu();
+                        }}
+                        title='Declined'
+                        titleStyle={styles.menuItemText}
+                    />
+                </Menu>
+            </View>
+            <FlatList
+                data={filteredEnquiries}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContainer}
+                onScroll={onScroll}
+            />
+            <AnimatedFAB
+                label={'New Enquiry '}
+                icon={'plus'}
+                extended={isExtended}
+                onPress={() => router.push('/enquiry/newEnquiry')}
+                visible={true}
+                animateFrom={'right'}
+                iconMode={'dynamic'}
+                style={[styles.fab, { right: 16 }]}
+                labelStyle={styles.fabLabel}
+                rippleColor={Colors.light.white90}
+            />
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: '#FFFFFF',
-    },
     container: {
         flex: 1,
-    },
-    scrollViewContent: {
-        flexGrow: 1,
+        backgroundColor: Colors.light.background,
         padding: 20,
-        gap: 12,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.light.text,
-        marginBottom: 20,
-    },
-    input: {
-        backgroundColor: '#FFFFFF',
-        borderWidth: 1,
-        borderColor: Colors.light.black30,
-        borderRadius: 99,
-        paddingVertical: 10,
-        paddingHorizontal: 14,
-        color: Colors.light.text,
-    },
-    pickerContainer: {
-        borderWidth: 1,
-        borderColor: Colors.light.black30,
-        borderRadius: 99,
-    },
-    picker: {
-        color: Colors.light.text,
-    },
-    instrumentRow: {
+    searchContainer: {
         flexDirection: 'row',
-        columnGap: 8,
         justifyContent: 'space-between',
         alignItems: 'center',
-        zIndex: 1,
+        marginBottom: 16,
     },
-    quantityInput: {
+    searchBar: {
+        flex: 1,
+        marginRight: 10,
+        backgroundColor: Colors.light.background,
+        borderWidth: 1,
+        borderColor: Colors.light.black30,
+        borderRadius: 99,
+    },
+    searchInput: {
+        color: Colors.light.text,
+    },
+    filterButton: {
+        borderWidth: 1,
+        borderColor: Colors.light.black30,
+        minWidth: 100,
+        borderRadius: 99,
+        justifyContent: 'center',
+        alignItems: 'center',
         flex: 1,
     },
-    addButton: {
-        backgroundColor: Colors.light.blue60,
-        borderRadius: 99,
-        width: 40,
-        aspectRatio: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    removeButton: {
-        backgroundColor: Colors.light.red60,
-        borderRadius: 99,
-        width: 40,
-        aspectRatio: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    buttonText: {
-        color: Colors.light.background,
-        fontSize: 24,
-        fontWeight: 'bold',
-    },
-    commentsInput: {
-        borderRadius: 16,
-        height: 100,
-        textAlignVertical: 'top',
-    },
-    submitButton: {
-        backgroundColor: Colors.light.red90,
-        borderRadius: 99,
-        padding: 16,
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    disabledButton: {
-        backgroundColor: Colors.light.black30,
-    },
-    submitButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    totalAmountContainer: {
-        marginTop: 20,
-    },
-    totalAmountLabel: {
-        fontSize: 18,
-        fontWeight: 'bold',
+    filterButtonLabel: {
         color: Colors.light.text,
+    },
+    menuContent: {
+        backgroundColor: Colors.light.background,
+        borderRadius: 8,
+    },
+    menuItemText: {
+        color: Colors.light.text,
+    },
+    enquiryItem: {
+        backgroundColor: Colors.light.cardBg,
+        borderRadius: 12,
+        padding: 16,
+        marginBottom: 12,
+    },
+    enquiryHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
         marginBottom: 8,
     },
-    totalAmountInputContainer: {
+    enquiryNumber: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: Colors.light.text,
+    },
+    enquiryDate: {
+        fontSize: 14,
+        color: Colors.light.black60,
+    },
+    customerName: {
+        fontSize: 16,
+        color: Colors.light.black90,
+        marginBottom: 8,
+    },
+    enquiryFooter: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: Colors.light.cardBg,
-        borderRadius: 99,
-        paddingHorizontal: 16,
     },
-    currencySymbol: {
-        fontSize: 24,
+    amount: {
+        fontSize: 16,
         fontWeight: 'bold',
         color: Colors.light.red90,
     },
-    totalAmountInput: {
-        flex: 1,
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: Colors.light.red90,
-        paddingVertical: 12,
-        paddingLeft: 8,
+    fab: {
+        margin: 16,
+        bottom: 0,
+        backgroundColor: Colors.light.red90,
     },
 });

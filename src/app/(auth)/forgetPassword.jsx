@@ -16,46 +16,36 @@ import {
 import { useAuth } from '@context/authContext';
 import { useRouter } from 'expo-router';
 import { Colors } from '@constants/Colors';
-import { IconMail, IconLock, IconShow, IconHide } from '@constants/SvgIcons';
+import { IconMail } from '@constants/SvgIcons';
 import { TouchableRipple } from 'react-native-paper';
 
 const { width } = Dimensions.get('window');
 
-const SignIn = () => {
-    const { login } = useAuth();
+const ForgotPassword = () => {
+    const { resetPassword } = useAuth();
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
 
-    const handleSignIn = async () => {
-        if (!email || !password) {
-            Alert.alert('Sign In', 'Please enter both email and password!', [
+    const handleResetPassword = async () => {
+        if (!email) {
+            Alert.alert('Forgot Password', 'Please enter your email address', [
                 { text: 'OK' },
             ]);
             return;
         }
         setIsLoading(true);
-        let response = await login(email, password);
+        let response = await resetPassword(email);
         setIsLoading(false);
-        if (!response.success) {
-            Alert.alert('Sign In', response.msg, [{ text: 'OK' }]);
+        if (response.success) {
+            Alert.alert(
+                'Forgot Password',
+                'Password reset email sent. Please check your inbox.',
+                [{ text: 'OK', onPress: () => router.back() }]
+            );
         } else {
-            router.replace('home');
+            Alert.alert('Forgot Password', response.msg, [{ text: 'OK' }]);
         }
-    };
-
-    const handleSignUpRedirect = () => {
-        router.replace('signUp');
-    };
-
-    const handleForgotPassword = () => {
-        router.push('forgotPassword');
-    };
-
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
     };
 
     return (
@@ -73,6 +63,11 @@ const SignIn = () => {
                         style={styles.logo}
                         resizeMode='contain'
                     />
+                    <Text style={styles.title}>Forgot Password</Text>
+                    <Text style={styles.description}>
+                        Enter your email address and we'll send you a link to
+                        reset your password.
+                    </Text>
                     <View style={styles.inputContainer}>
                         <View style={styles.inputWrapper}>
                             <IconMail
@@ -90,52 +85,10 @@ const SignIn = () => {
                                 autoCapitalize='none'
                             />
                         </View>
-                        <View style={styles.inputWrapper}>
-                            <IconLock
-                                width={24}
-                                height={24}
-                                pathStroke={Colors.light.black30}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder='Enter your password'
-                                placeholderTextColor={Colors.light.black30}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableRipple
-                                onPress={togglePasswordVisibility}
-                                rippleColor='rgba(0, 0, 0, 0.32)'
-                            >
-                                {showPassword ? (
-                                    <IconHide
-                                        width={24}
-                                        height={24}
-                                        pathStroke={Colors.light.black30}
-                                    />
-                                ) : (
-                                    <IconShow
-                                        width={24}
-                                        height={24}
-                                        pathStroke={Colors.light.black30}
-                                    />
-                                )}
-                            </TouchableRipple>
-                        </View>
                     </View>
                     <TouchableRipple
-                        style={styles.forgotPasswordButton}
-                        onPress={handleForgotPassword}
-                        rippleColor='rgba(73, 99, 186, 0.32)'
-                    >
-                        <Text style={styles.forgotPasswordText}>
-                            Forgot Password?
-                        </Text>
-                    </TouchableRipple>
-                    <TouchableRipple
                         style={styles.button}
-                        onPress={handleSignIn}
+                        onPress={handleResetPassword}
                         disabled={isLoading}
                         rippleColor='rgba(255, 255, 255, 0.32)'
                     >
@@ -144,16 +97,18 @@ const SignIn = () => {
                                 color={Colors.light.background}
                             />
                         ) : (
-                            <Text style={styles.buttonText}>Sign In</Text>
+                            <Text style={styles.buttonText}>
+                                Reset Password
+                            </Text>
                         )}
                     </TouchableRipple>
                     <TouchableRipple
-                        style={styles.signUpButton}
-                        onPress={handleSignUpRedirect}
+                        style={styles.backButton}
+                        onPress={() => router.back()}
                         rippleColor='rgba(230, 88, 112, 0.32)'
                     >
-                        <Text style={styles.signUpButtonText}>
-                            Don't have an account? Sign Up
+                        <Text style={styles.backButtonText}>
+                            Back to Sign In
                         </Text>
                     </TouchableRipple>
                 </ScrollView>
@@ -180,6 +135,19 @@ const styles = StyleSheet.create({
         width: width * 0.6,
         height: width * 0.2,
     },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: Colors.light.text,
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    description: {
+        fontSize: 16,
+        color: Colors.light.black60,
+        marginBottom: 24,
+        textAlign: 'center',
+    },
     inputContainer: {
         marginBottom: 20,
     },
@@ -199,14 +167,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: Colors.light.text,
     },
-    forgotPasswordButton: {
-        alignSelf: 'flex-end',
-        marginBottom: 20,
-    },
-    forgotPasswordText: {
-        color: Colors.light.blue90,
-        fontSize: 14,
-    },
     button: {
         backgroundColor: Colors.light.red90,
         padding: 15,
@@ -219,14 +179,14 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
-    signUpButton: {
+    backButton: {
         padding: 10,
         alignItems: 'center',
     },
-    signUpButtonText: {
+    backButtonText: {
         color: Colors.light.red90,
         fontSize: 16,
     },
 });
 
-export default SignIn;
+export default ForgotPassword;
