@@ -24,11 +24,14 @@ import { Colors } from '@/src/constants/Colors';
 import Toast from 'react-native-toast-message';
 import { IconProfile, IconPhone, IconMail } from '@constants/SvgIcons';
 import { Ionicons } from '@expo/vector-icons';
+import StatusPill from '@/src/components/StatusPill';
 
 export default function EnquiryDetailsPage() {
     const { enquiry } = useLocalSearchParams();
     const [enquiryData, setEnquiryData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [approvingStatus, setApprovingStatus] = useState(false);
+    const [decliningStatus, setDecliningStatus] = useState(false);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -67,6 +70,9 @@ export default function EnquiryDetailsPage() {
     };
 
     const updateEnquiryStatus = async (newStatus) => {
+        const setStatusFunction =
+            newStatus === 'Approved' ? setApprovingStatus : setDecliningStatus;
+        setStatusFunction(true);
         try {
             if (!enquiryData || !enquiryData.id) {
                 throw new Error('Enquiry data not available');
@@ -86,6 +92,8 @@ export default function EnquiryDetailsPage() {
                 text1: 'Error',
                 text2: 'Failed to update enquiry status',
             });
+        } finally {
+            setStatusFunction(false);
         }
     };
 
@@ -110,11 +118,7 @@ export default function EnquiryDetailsPage() {
                     <Text style={styles.date}>
                         {new Date(enquiryData?.timestamp).toLocaleDateString()}
                     </Text>
-                    <View style={styles.statusBadge}>
-                        <Text style={styles.statusText}>
-                            {enquiryData?.status}
-                        </Text>
-                    </View>
+                    <StatusPill status={enquiryData?.status} />
                 </View>
 
                 <View style={styles.infoCard}>
@@ -224,14 +228,28 @@ export default function EnquiryDetailsPage() {
                             <TouchableOpacity
                                 style={[styles.button, styles.approveButton]}
                                 onPress={() => updateEnquiryStatus('Approved')}
+                                disabled={approvingStatus || decliningStatus}
                             >
-                                <Text style={styles.buttonText}>Approve</Text>
+                                {approvingStatus ? (
+                                    <ActivityIndicator color='white' />
+                                ) : (
+                                    <Text style={styles.buttonText}>
+                                        Approve
+                                    </Text>
+                                )}
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.button, styles.declineButton]}
                                 onPress={() => updateEnquiryStatus('Declined')}
+                                disabled={approvingStatus || decliningStatus}
                             >
-                                <Text style={styles.buttonText}>Decline</Text>
+                                {decliningStatus ? (
+                                    <ActivityIndicator color='white' />
+                                ) : (
+                                    <Text style={styles.buttonText}>
+                                        Decline
+                                    </Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -272,24 +290,13 @@ const styles = StyleSheet.create({
         color: '#444',
     },
     date: {
+        marginRight: 'auto',
         fontSize: 12,
         color: '#fcfcfc',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 99,
         backgroundColor: '#444',
-    },
-    statusBadge: {
-        backgroundColor: '#4CAF50',
-        marginLeft: 'auto',
-        borderRadius: 12,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-    },
-    statusText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '600',
     },
     infoCard: {
         backgroundColor: '#F8F8F8',
@@ -347,7 +354,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     approveButton: {
-        backgroundColor: '#4CAF50',
+        backgroundColor: '#33D69F',
         marginRight: 8,
     },
     declineButton: {

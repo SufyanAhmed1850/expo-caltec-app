@@ -12,10 +12,11 @@ import {
     SafeAreaView,
     RefreshControl,
     Image,
+    ActivityIndicator,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/src/context/authContext';
-import { Colors } from '@constants/Colors';
+import { Colors } from '@/src/constants/Colors';
 import { IconProfile, IconPhone } from '@constants/SvgIcons';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useNavigation } from 'expo-router';
@@ -262,11 +263,15 @@ export default function Profile() {
                         onPress={handleUpdate}
                         disabled={!isFormChanged || isLoading.update}
                     >
-                        <Text style={styles.updateButtonText}>
-                            {isLoading.update
-                                ? 'Updating...'
-                                : 'Update Profile'}
-                        </Text>
+                        {isLoading.update ? (
+                            <ActivityIndicator
+                                color={Colors.light.background}
+                            />
+                        ) : (
+                            <Text style={styles.updateButtonText}>
+                                Update Profile
+                            </Text>
+                        )}
                     </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>

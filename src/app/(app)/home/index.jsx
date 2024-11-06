@@ -8,21 +8,21 @@ import {
     RefreshControl,
     TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import {
     collection,
     query,
     where,
     getDocs,
     orderBy,
-    updateDoc,
-    doc,
+    onSnapshot,
 } from 'firebase/firestore';
 import { db } from '@/firebaseConfig';
 import { useAuth } from '@/src/context/authContext';
 import { Colors } from '@/src/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import StatusPill from '@/src/components/StatusPill';
 
 export default function Home() {
     const [enquiries, setEnquiries] = useState([]);
@@ -32,30 +32,31 @@ export default function Home() {
     const [statusFilter, setStatusFilter] = useState('All');
     const { user } = useAuth();
     const router = useRouter();
+    const navigation = useNavigation();
 
-    const fetchEnquiries = useCallback(async () => {
-        try {
-            const enquiriesRef = collection(db, 'enquiries');
-            let q = query(enquiriesRef, orderBy('timestamp', 'desc'));
+    const fetchEnquiries = useCallback(() => {
+        const enquiriesRef = collection(db, 'enquiries');
+        let q = query(enquiriesRef, orderBy('timestamp', 'desc'));
 
-            if (user?.role !== 'admin') {
-                q = query(q, where('userId', '==', user?.uid));
-            }
+        if (user?.role !== 'admin') {
+            q = query(q, where('userId', '==', user?.uid));
+        }
 
-            const querySnapshot = await getDocs(q);
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const fetchedEnquiries = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
             }));
             setEnquiries(fetchedEnquiries);
             setFilteredEnquiries(fetchedEnquiries);
-        } catch (error) {
-            console.error('Error fetching enquiries:', error);
-        }
+        });
+
+        return unsubscribe;
     }, [user]);
 
     useEffect(() => {
-        fetchEnquiries();
+        const unsubscribe = fetchEnquiries();
+        return () => unsubscribe();
     }, [fetchEnquiries]);
 
     useEffect(() => {
@@ -79,16 +80,6 @@ export default function Home() {
         setRefreshing(false);
     }, [fetchEnquiries]);
 
-    const updateEnquiryStatus = async (enquiryId, newStatus) => {
-        try {
-            const enquiryRef = doc(db, 'enquiries', enquiryId);
-            await updateDoc(enquiryRef, { status: newStatus });
-            await fetchEnquiries(); // Refresh the list after updating
-        } catch (error) {
-            console.error('Error updating enquiry status:', error);
-        }
-    };
-
     const renderItem = ({ item }) => (
         <TouchableOpacity
             style={styles.enquiryItem}
@@ -105,28 +96,8 @@ export default function Home() {
                 <Text style={styles.amount}>
                     PKR {item.totalAmount.toLocaleString()}
                 </Text>
-                <View
-                    style={[styles.statusBadge, styles[`status${item.status}`]]}
-                >
-                    <Text style={styles.statusText}>{item.status}</Text>
-                </View>
+                <StatusPill status={item.status} />
             </View>
-            {user?.role === 'admin' && (
-                <View style={styles.adminControls}>
-                    <TouchableOpacity
-                        style={styles.statusButton}
-                        onPress={() => updateEnquiryStatus(item.id, 'Approved')}
-                    >
-                        <Text style={styles.statusButtonText}>Approve</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.statusButton}
-                        onPress={() => updateEnquiryStatus(item.id, 'Declined')}
-                    >
-                        <Text style={styles.statusButtonText}>Decline</Text>
-                    </TouchableOpacity>
-                </View>
-            )}
         </TouchableOpacity>
     );
 
@@ -177,7 +148,6 @@ export default function Home() {
         </View>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -237,24 +207,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: Colors.light.red90,
     },
-    statusBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-    },
-    statusApproved: {
-        backgroundColor: '#D1FAE5',
-    },
-    statusPending: {
-        backgroundColor: '#FEF3C7',
-    },
-    statusDeclined: {
-        backgroundColor: '#FEE2E2',
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
     emptyState: {
         flex: 1,
         justifyContent: 'center',
@@ -265,21 +217,5 @@ const styles = StyleSheet.create({
         marginTop: 16,
         fontSize: 16,
         color: Colors.light.black60,
-    },
-    adminControls: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 8,
-    },
-    statusButton: {
-        backgroundColor: Colors.light.blue90,
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-    },
-    statusButtonText: {
-        color: Colors.light.background,
-        fontSize: 12,
-        fontWeight: 'bold',
     },
 });

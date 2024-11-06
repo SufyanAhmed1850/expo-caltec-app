@@ -27,6 +27,7 @@ const ServicesStack = () => {
             }}
         >
             <Stack.Screen name='index' options={{ title: 'Enquiries' }} />
+            <Stack.Screen name='[enquiry]' options={{ title: 'Enquiry' }} />
         </Stack>
     );
 };

@@ -122,7 +122,10 @@ const SignUp = () => {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.container}
             >
-                <ScrollView contentContainerStyle={styles.scrollView}>
+                <ScrollView
+                    keyboardShouldPersistTaps='always'
+                    contentContainerStyle={styles.scrollView}
+                >
                     <Image
                         source={require('@assets/images/logo.png')}
                         style={styles.logo}

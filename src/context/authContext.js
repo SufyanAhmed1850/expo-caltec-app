@@ -173,30 +173,23 @@ export const AuthContextProvider = ({ children }) => {
                 phone,
             };
 
-            if (profileImage) {
-                // Convert image URI to Blob
+            if (profileImage && profileImage !== user.profileImage) {
+                const imageRef = ref(storage, `profileImages/${user.uid}`);
                 const response = await fetch(profileImage);
                 const blob = await response.blob();
+                const mimeType = blob.type || 'image/jpeg';
 
-                // Determine MIME type from the blob
-                const mimeType = blob.type || 'image/jpeg'; // Fallback to 'image/jpeg' if type is unknown
-
-                // Upload the image to Firebase storage with metadata
-                const imageRef = ref(storage, `profileImages/${user.uid}`);
                 const metadata = {
                     contentType: mimeType,
                 };
-                await uploadBytes(imageRef, blob, metadata);
 
-                // Get the download URL of the uploaded image
+                await uploadBytes(imageRef, blob, metadata);
                 const downloadURL = await getDownloadURL(imageRef);
                 updateData.profileImage = downloadURL;
             }
 
-            // Update Firestore user document with new data
             await updateDoc(userRef, updateData);
 
-            // Update local user state
             setUser((prevUser) => ({
                 ...prevUser,
                 ...updateData,

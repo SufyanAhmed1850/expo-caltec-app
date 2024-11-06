@@ -158,7 +158,6 @@ export default function CategoryServicesPage() {
 
     return (
         <SafeAreaView style={styles.safeArea}>
-            <Stack.Screen options={{ title: category }} />
             <View style={styles.container}>
                 <Text style={styles.title}>{category}</Text>
                 <FlatList
