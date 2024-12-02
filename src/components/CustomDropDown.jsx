@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
     View,
     Text,
@@ -11,19 +11,20 @@ import {
     TouchableWithoutFeedback,
     ActivityIndicator,
     RefreshControl,
-} from 'react-native';
-import { Colors } from '@constants/Colors';
-import { IconSearch } from '@constants/SvgIcons';
-import { useEnquiry } from '@/src/context/enquiryContext';
+} from "react-native";
+import { Colors } from "@constants/Colors";
+import { IconSearch } from "@constants/SvgIcons";
+import { useEnquiry } from "@/src/context/enquiryContext";
 
 export const CustomDropDown = ({
     onSelect,
-    placeholder = 'Select Instrument',
+    placeholder = "Select Instrument",
 }) => {
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
     const [filteredData, setFilteredData] = useState([]);
-    const [selectedInstrument, setSelectedInstrument] = useState('');
+    const [selectedInstrument, setSelectedInstrument] = useState("");
+    const [selectedPrice, setSelectedPrice] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
     const searchRef = useRef();
     const { services, loading, fetchServices } = useEnquiry();
@@ -37,7 +38,7 @@ export const CustomDropDown = ({
     }, [services]);
 
     const onSearch = (search) => {
-        if (search !== '') {
+        if (search !== "") {
             let tempData = services.filter((item) => {
                 return (
                     item.name.toLowerCase().indexOf(search.toLowerCase()) > -1
@@ -51,8 +52,8 @@ export const CustomDropDown = ({
 
     const closeModal = () => {
         setModalVisible(false);
-        onSearch('');
-        setSearch('');
+        onSearch("");
+        setSearch("");
     };
 
     const onRefresh = useCallback(async () => {
@@ -66,11 +67,13 @@ export const CustomDropDown = ({
             style={styles.item}
             onPress={() => {
                 setSelectedInstrument(item.name);
+                setSelectedPrice(item.price);
                 onSelect(item.name);
                 closeModal();
             }}
         >
             <Text style={styles.itemText}>{item.name}</Text>
+            <Text style={styles.itemPrice}>PKR {item.price}</Text>
         </TouchableOpacity>
     );
 
@@ -89,11 +92,13 @@ export const CustomDropDown = ({
                 onPress={() => setModalVisible(true)}
             >
                 <Text style={styles.dropdownButtonText}>
-                    {selectedInstrument || placeholder}
+                    {selectedInstrument
+                        ? `${selectedInstrument} - PKR ${selectedPrice}`
+                        : placeholder}
                 </Text>
             </TouchableOpacity>
             <Modal
-                animationType='fade'
+                animationType="fade"
                 transparent={true}
                 visible={modalVisible}
                 onRequestClose={closeModal}
@@ -110,7 +115,7 @@ export const CustomDropDown = ({
                                             style={styles.searchIcon}
                                         />
                                         <TextInput
-                                            placeholder='Search...'
+                                            placeholder="Search Instrument"
                                             value={search}
                                             ref={searchRef}
                                             onChangeText={(txt) => {
@@ -125,7 +130,7 @@ export const CustomDropDown = ({
                                     </View>
                                     {loading && !refreshing ? (
                                         <ActivityIndicator
-                                            size='large'
+                                            size="large"
                                             color={Colors.light.red90}
                                         />
                                     ) : (
@@ -168,33 +173,33 @@ const styles = StyleSheet.create({
         flex: 2,
     },
     dropdownButton: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: "#FFFFFF",
         borderWidth: 1,
         borderColor: Colors.light.black30,
-        borderRadius: 99,
+        borderRadius: 10,
         paddingVertical: 10,
         paddingHorizontal: 14,
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'flex-start',
+        justifyContent: "center",
+        alignItems: "flex-start",
     },
     dropdownButtonText: {
         color: Colors.light.text,
     },
     modalOverlay: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
     },
     modalContainer: {
-        width: '100%',
-        justifyContent: 'center',
-        alignItems: 'center',
+        width: "100%",
+        justifyContent: "center",
+        alignItems: "center",
     },
     dropdownList: {
-        width: '90%',
-        height: '100%',
+        width: "90%",
+        height: "100%",
         maxHeight: 580,
         backgroundColor: Colors.light.background,
         borderRadius: 34,
@@ -203,8 +208,8 @@ const styles = StyleSheet.create({
         padding: 14,
     },
     searchInputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         backgroundColor: Colors.light.background,
         borderWidth: 1,
         borderColor: Colors.light.black30,
@@ -213,9 +218,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 10,
         paddingRight: 14,
         marginBottom: 10,
-    },
-    searchIcon: {
-        marginRight: 10,
+        gap: 10,
     },
     searchInput: {
         flex: 1,
@@ -236,22 +239,27 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         backgroundColor: Colors.light.red90,
         borderRadius: 99,
-        alignItems: 'center',
+        alignItems: "center",
     },
     closeButtonText: {
         color: Colors.light.background,
-        fontWeight: 'bold',
+        fontWeight: "bold",
     },
     emptyListContainer: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: "center",
+        alignItems: "center",
         paddingVertical: 20,
     },
     emptyListText: {
         color: Colors.light.black30,
         fontSize: 16,
-        textAlign: 'center',
+        textAlign: "center",
+    },
+    itemPrice: {
+        color: Colors.light.red90,
+        fontSize: 14,
+        fontWeight: "bold",
     },
 });
 

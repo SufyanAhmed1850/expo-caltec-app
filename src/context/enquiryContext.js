@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useState, useContext, useCallback } from "react";
 import {
     collection,
     addDoc,
@@ -6,9 +6,9 @@ import {
     query,
     orderBy,
     limit,
-} from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import Toast from 'react-native-toast-message';
+} from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import Toast from "react-native-toast-message";
 
 const EnquiryContext = createContext();
 
@@ -19,20 +19,18 @@ export const EnquiryProvider = ({ children }) => {
     const fetchServices = useCallback(async () => {
         setLoading(true);
         try {
-            const servicesSnapshot = await getDocs(collection(db, 'services'));
-            const servicesData = servicesSnapshot.docs.map((doc) => ({
+            const querySnapshot = await getDocs(collection(db, "services"));
+            const servicesData = querySnapshot.docs.map((doc) => ({
                 id: doc.id,
-                name: doc.data().name,
-                category: doc.data().category,
-                price: doc.data().price,
+                ...doc.data(),
             }));
             setServices(servicesData);
         } catch (error) {
-            console.error('Error fetching services:', error);
+            console.error("Error fetching services:", error);
             Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to fetch services',
+                type: "error",
+                text1: "Error",
+                text2: "Failed to fetch services",
             });
         } finally {
             setLoading(false);
@@ -40,21 +38,22 @@ export const EnquiryProvider = ({ children }) => {
     }, []);
 
     const getNextEnquiryNumber = async () => {
-        const enquiriesRef = collection(db, 'enquiries');
+        const enquiriesRef = collection(db, "enquiries");
         const q = query(
             enquiriesRef,
-            orderBy('enquiryNumber', 'desc'),
-            limit(1)
+            orderBy("enquiryNumber", "desc"),
+            limit(1),
         );
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            return 'CIS000001';
+            return "CIS-000001";
         } else {
             const lastEnquiry = querySnapshot.docs[0].data();
-            const lastNumber = parseInt(lastEnquiry.enquiryNumber.slice(3), 10);
-            const nextNumber = lastNumber + 1;
-            return `CIS${nextNumber.toString().padStart(6, '0')}`;
+            const lastNumber = parseInt(
+                lastEnquiry.enquiryNumber.split("-")[1],
+            );
+            return `CIS-${(lastNumber + 1).toString().padStart(6, "0")}`;
         }
     };
 
@@ -65,21 +64,29 @@ export const EnquiryProvider = ({ children }) => {
             const enquiryWithNumber = {
                 ...enquiryData,
                 enquiryNumber,
-                status: enquiryData.status || 'Pending',
+                status: enquiryData.status || "Pending",
+                instruments: enquiryData.instruments.map((instrument) => ({
+                    ...instrument,
+                    customPrice:
+                        parseFloat(instrument.customPrice) || instrument.price,
+                    totalPrice:
+                        (parseFloat(instrument.customPrice) ||
+                            instrument.price) * instrument.quantity,
+                })),
             };
-            await addDoc(collection(db, 'enquiries'), enquiryWithNumber);
+            await addDoc(collection(db, "enquiries"), enquiryWithNumber);
             Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Enquiry submitted successfully',
+                type: "success",
+                text1: "Success",
+                text2: "Enquiry submitted successfully",
             });
             return true;
         } catch (error) {
-            console.error('Error submitting enquiry:', error);
+            console.error("Error submitting enquiry:", error);
             Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to submit enquiry',
+                type: "error",
+                text1: "Error",
+                text2: "Failed to submit enquiry",
             });
             return false;
         } finally {
@@ -89,7 +96,12 @@ export const EnquiryProvider = ({ children }) => {
 
     return (
         <EnquiryContext.Provider
-            value={{ services, loading, fetchServices, submitEnquiry }}
+            value={{
+                services,
+                loading,
+                fetchServices,
+                submitEnquiry,
+            }}
         >
             {children}
         </EnquiryContext.Provider>
@@ -99,7 +111,7 @@ export const EnquiryProvider = ({ children }) => {
 export const useEnquiry = () => {
     const context = useContext(EnquiryContext);
     if (!context) {
-        throw new Error('useEnquiry must be used within an EnquiryProvider');
+        throw new Error("useEnquiry must be used within an EnquiryProvider");
     }
     return context;
 };

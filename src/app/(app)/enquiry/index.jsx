@@ -82,24 +82,31 @@ export default function EnquiryList() {
     }, [searchQuery, statusFilter, enquiries]);
 
     const renderItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.enquiryItem}
+        <TouchableRipple
+            style={styles.enquiryItemTouchable}
             onPress={() => router.push(`/enquiry/${item.enquiryNumber}`)}
+            asChild
+            rippleColor={Colors.light.blackOpacity20}
+            borderless
         >
-            <View style={styles.enquiryHeader}>
-                <Text style={styles.enquiryNumber}>{item.enquiryNumber}</Text>
-                <Text style={styles.enquiryDate}>
-                    {new Date(item.timestamp).toLocaleDateString()}
-                </Text>
+            <View style={styles.enquiryItem}>
+                <View style={styles.enquiryHeader}>
+                    <Text style={styles.enquiryNumber}>
+                        {item.enquiryNumber}
+                    </Text>
+                    <Text style={styles.enquiryDate}>
+                        {new Date(item.timestamp).toLocaleDateString()}
+                    </Text>
+                </View>
+                <Text style={styles.customerName}>{item.userName}</Text>
+                <View style={styles.enquiryFooter}>
+                    <Text style={styles.amount}>
+                        PKR {item.totalAmount.toLocaleString()}
+                    </Text>
+                    <StatusPill status={item.status} />
+                </View>
             </View>
-            <Text style={styles.customerName}>{item.userName}</Text>
-            <View style={styles.enquiryFooter}>
-                <Text style={styles.amount}>
-                    PKR {item.totalAmount.toLocaleString()}
-                </Text>
-                <StatusPill status={item.status} />
-            </View>
-        </TouchableOpacity>
+        </TouchableRipple>
     );
 
     const onScroll = ({ nativeEvent }) => {
@@ -192,6 +199,7 @@ export default function EnquiryList() {
                 style={[styles.fab, { right: 16 }]}
                 labelStyle={styles.fabLabel}
                 rippleColor={Colors.light.white90}
+                color={Colors.light.background}
             />
         </View>
     );
@@ -239,11 +247,17 @@ const styles = StyleSheet.create({
     menuItemText: {
         color: Colors.light.text,
     },
+    listContainer: {
+        gap: 12,
+    },
+    enquiryItemTouchable: {
+        borderRadius: 12,
+    },
     enquiryItem: {
         backgroundColor: Colors.light.cardBg,
         borderRadius: 12,
         padding: 16,
-        marginBottom: 12,
+        // marginBottom: 12,
     },
     enquiryHeader: {
         flexDirection: 'row',

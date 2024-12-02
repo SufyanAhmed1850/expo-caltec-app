@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
     View,
     Text,
@@ -7,8 +7,8 @@ import {
     TouchableOpacity,
     ActivityIndicator,
     SafeAreaView,
-} from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+} from "react-native";
+import { useLocalSearchParams, Stack } from "expo-router";
 import {
     doc,
     getDoc,
@@ -17,14 +17,14 @@ import {
     query,
     where,
     getDocs,
-} from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import { useAuth } from '@/src/context/authContext';
-import { Colors } from '@/src/constants/Colors';
-import Toast from 'react-native-toast-message';
-import { IconProfile, IconPhone, IconMail } from '@constants/SvgIcons';
-import { Ionicons } from '@expo/vector-icons';
-import StatusPill from '@/src/components/StatusPill';
+} from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import { useAuth } from "@/src/context/authContext";
+import { Colors } from "@/src/constants/Colors";
+import Toast from "react-native-toast-message";
+import { IconProfile, IconPhone, IconMail } from "@constants/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
+import StatusPill from "@/src/components/StatusPill";
 
 export default function EnquiryDetailsPage() {
     const { enquiry } = useLocalSearchParams();
@@ -40,10 +40,10 @@ export default function EnquiryDetailsPage() {
 
     const fetchEnquiryDetails = async () => {
         try {
-            const enquiriesRef = collection(db, 'enquiries');
+            const enquiriesRef = collection(db, "enquiries");
             const q = query(
                 enquiriesRef,
-                where('enquiryNumber', '==', enquiry)
+                where("enquiryNumber", "==", enquiry),
             );
             const querySnapshot = await getDocs(q);
 
@@ -52,17 +52,17 @@ export default function EnquiryDetailsPage() {
                 setEnquiryData({ id: enquiryDoc.id, ...enquiryDoc.data() });
             } else {
                 Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: 'Enquiry not found',
+                    type: "error",
+                    text1: "Error",
+                    text2: "Enquiry not found",
                 });
             }
         } catch (error) {
-            console.error('Error fetching enquiry details:', error);
+            console.error("Error fetching enquiry details:", error);
             Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to fetch enquiry details',
+                type: "error",
+                text1: "Error",
+                text2: "Failed to fetch enquiry details",
             });
         } finally {
             setLoading(false);
@@ -71,26 +71,26 @@ export default function EnquiryDetailsPage() {
 
     const updateEnquiryStatus = async (newStatus) => {
         const setStatusFunction =
-            newStatus === 'Approved' ? setApprovingStatus : setDecliningStatus;
+            newStatus === "Approved" ? setApprovingStatus : setDecliningStatus;
         setStatusFunction(true);
         try {
             if (!enquiryData || !enquiryData.id) {
-                throw new Error('Enquiry data not available');
+                throw new Error("Enquiry data not available");
             }
-            const enquiryRef = doc(db, 'enquiries', enquiryData.id);
+            const enquiryRef = doc(db, "enquiries", enquiryData.id);
             await updateDoc(enquiryRef, { status: newStatus });
             setEnquiryData((prevData) => ({ ...prevData, status: newStatus }));
             Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Enquiry status updated',
+                type: "success",
+                text1: "Success",
+                text2: "Enquiry status updated",
             });
         } catch (error) {
-            console.error('Error updating enquiry status:', error);
+            console.error("Error updating enquiry status:", error);
             Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to update enquiry status',
+                type: "error",
+                text1: "Error",
+                text2: "Failed to update enquiry status",
             });
         } finally {
             setStatusFunction(false);
@@ -100,7 +100,7 @@ export default function EnquiryDetailsPage() {
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size='large' color={Colors.light.red90} />
+                <ActivityIndicator size="large" color={Colors.light.red90} />
             </View>
         );
     }
@@ -136,7 +136,7 @@ export default function EnquiryDetailsPage() {
                     </View>
                     <View style={styles.infoRow}>
                         <Ionicons
-                            name='business-outline'
+                            name="business-outline"
                             size={20}
                             color={Colors.light.black60}
                             style={styles.icon}
@@ -170,29 +170,40 @@ export default function EnquiryDetailsPage() {
                 </View>
 
                 <View style={styles.infoCard}>
-                    <Text style={styles.sectionTitle}>Enquiry</Text>
+                    <Text style={styles.sectionTitle}>Enquiry Details</Text>
                     <View style={styles.infoRow}>
                         <Ionicons
-                            name='location-outline'
+                            name="location-outline"
                             size={20}
                             color={Colors.light.black60}
                             style={styles.icon}
                         />
                         <Text style={styles.infoText}>
-                            Place of Calibration:{' '}
+                            Place of Calibration:{" "}
                             {enquiryData?.placeOfCalibration}
                         </Text>
                     </View>
                     <View style={styles.infoRow}>
                         <Ionicons
-                            name='cash-outline'
+                            name="cash-outline"
                             size={20}
                             color={Colors.light.black60}
                             style={styles.icon}
                         />
                         <Text style={styles.infoText}>
-                            Total Amount: PKR{' '}
+                            Total Amount: PKR{" "}
                             {enquiryData?.totalAmount.toLocaleString()}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Ionicons
+                            name="document-text-outline"
+                            size={20}
+                            color={Colors.light.black60}
+                            style={styles.icon}
+                        />
+                        <Text style={styles.infoText}>
+                            Comments: {enquiryData?.comments || "N/A"}
                         </Text>
                     </View>
                 </View>
@@ -215,23 +226,34 @@ export default function EnquiryDetailsPage() {
                                 Quantity: {instrument.quantity}
                             </Text>
                             <Text style={styles.instrumentDetail}>
-                                Price: PKR {instrument.price.toLocaleString()}
+                                Default Price: PKR{" "}
+                                {instrument.price.toLocaleString()}
+                            </Text>
+                            <Text style={styles.instrumentDetail}>
+                                Custom Price: PKR{" "}
+                                {instrument.customPrice
+                                    ? instrument.customPrice.toLocaleString()
+                                    : "N/A"}
+                            </Text>
+                            <Text style={styles.instrumentDetail}>
+                                Total Price: PKR{" "}
+                                {instrument.totalPrice.toLocaleString()}
                             </Text>
                         </View>
                     ))}
                 </View>
 
-                {user?.role === 'admin' && (
+                {user?.role === "admin" && (
                     <View style={styles.adminActions}>
                         <Text style={styles.sectionTitle}>Admin Actions</Text>
                         <View style={styles.buttonContainer}>
                             <TouchableOpacity
                                 style={[styles.button, styles.approveButton]}
-                                onPress={() => updateEnquiryStatus('Approved')}
+                                onPress={() => updateEnquiryStatus("Approved")}
                                 disabled={approvingStatus || decliningStatus}
                             >
                                 {approvingStatus ? (
-                                    <ActivityIndicator color='white' />
+                                    <ActivityIndicator color="white" />
                                 ) : (
                                     <Text style={styles.buttonText}>
                                         Approve
@@ -240,11 +262,11 @@ export default function EnquiryDetailsPage() {
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.button, styles.declineButton]}
-                                onPress={() => updateEnquiryStatus('Declined')}
+                                onPress={() => updateEnquiryStatus("Declined")}
                                 disabled={approvingStatus || decliningStatus}
                             >
                                 {decliningStatus ? (
-                                    <ActivityIndicator color='white' />
+                                    <ActivityIndicator color="white" />
                                 ) : (
                                     <Text style={styles.buttonText}>
                                         Decline
@@ -263,43 +285,43 @@ export default function EnquiryDetailsPage() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'white',
+        backgroundColor: "white",
     },
     loadingContainer: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'white',
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "white",
     },
     scrollView: {
         flex: 1,
         padding: 16,
     },
     headerCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         gap: 14,
-        backgroundColor: '#F8F8F8',
+        backgroundColor: "#F8F8F8",
         borderRadius: 20,
         padding: 16,
         marginBottom: 16,
     },
     enquiryNumber: {
         fontSize: 18,
-        fontWeight: 'bold',
-        color: '#444',
+        fontWeight: "bold",
+        color: "#444",
     },
     date: {
-        marginRight: 'auto',
+        marginRight: "auto",
         fontSize: 12,
-        color: '#fcfcfc',
+        color: "#fcfcfc",
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 99,
-        backgroundColor: '#444',
+        backgroundColor: "#444",
     },
     infoCard: {
-        backgroundColor: '#F8F8F8',
+        backgroundColor: "#F8F8F8",
         borderRadius: 20,
         padding: 16,
         paddingBottom: 6,
@@ -307,12 +329,12 @@ const styles = StyleSheet.create({
     },
     sectionTitle: {
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: "bold",
         marginBottom: 14,
     },
     infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         marginBottom: 14,
         gap: 12,
     },
@@ -322,7 +344,7 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 16,
-        color: '#333',
+        color: "#333",
     },
     instrumentItem: {
         marginBottom: 8,
@@ -330,31 +352,31 @@ const styles = StyleSheet.create({
     },
     instrumentItemBorder: {
         borderBottomWidth: 1,
-        borderBottomColor: '#DDD',
+        borderBottomColor: "#DDD",
     },
     instrumentName: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: "600",
     },
     instrumentDetail: {
         fontSize: 14,
-        color: '#666',
+        color: "#666",
     },
     adminActions: {
         marginBottom: 32,
     },
     buttonContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+        flexDirection: "row",
+        justifyContent: "space-between",
     },
     button: {
         flex: 1,
         paddingVertical: 12,
         borderRadius: 99,
-        alignItems: 'center',
+        alignItems: "center",
     },
     approveButton: {
-        backgroundColor: '#33D69F',
+        backgroundColor: "#33D69F",
         marginRight: 8,
     },
     declineButton: {
@@ -362,8 +384,8 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     buttonText: {
-        color: 'white',
+        color: "white",
         fontSize: 16,
-        fontWeight: 'bold',
+        fontWeight: "bold",
     },
 });

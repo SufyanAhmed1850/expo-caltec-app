@@ -4,7 +4,6 @@ import {
     Text,
     StyleSheet,
     FlatList,
-    TouchableOpacity,
     Modal,
     TextInput,
     ActivityIndicator,
@@ -17,6 +16,7 @@ import { useService } from '@/src/context/serviceContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import Toast from 'react-native-toast-message';
+import { TouchableRipple, AnimatedFAB } from 'react-native-paper';
 
 export default function ServicesPage() {
     const [modalVisible, setModalVisible] = useState(false);
@@ -26,6 +26,7 @@ export default function ServicesPage() {
         price: '',
     });
     const [refreshing, setRefreshing] = useState(false);
+    const [isExtended, setIsExtended] = useState(true);
     const { user } = useAuth();
     const { categories, loading, fetchServices, addService } = useService();
     const router = useRouter();
@@ -63,23 +64,33 @@ export default function ServicesPage() {
     };
 
     const renderCategoryItem = ({ item }) => (
-        <TouchableOpacity
+        <TouchableRipple
             style={styles.categoryItem}
             onPress={() => router.push(`/services/${item.name}`)}
+            rippleColor={Colors.light.blackOpacity20}
+            borderless={true}
         >
             <View style={styles.categoryContent}>
-                <Text style={styles.categoryName}>{item.name}</Text>
-                <Text style={styles.categoryCount}>
-                    {item.servicesCount} services
-                </Text>
+                <View>
+                    <Text style={styles.categoryName}>{item.name}</Text>
+                    <Text style={styles.categoryCount}>
+                        {item.servicesCount} services
+                    </Text>
+                </View>
+                <Ionicons
+                    name='chevron-forward'
+                    size={24}
+                    color={Colors.light.red60}
+                />
             </View>
-            <Ionicons
-                name='chevron-forward'
-                size={24}
-                color={Colors.light.red60}
-            />
-        </TouchableOpacity>
+        </TouchableRipple>
     );
+
+    const onScroll = ({ nativeEvent }) => {
+        const currentScrollPosition =
+            Math.floor(nativeEvent?.contentOffset?.y) ?? 0;
+        setIsExtended(currentScrollPosition <= 0);
+    };
 
     if (loading && !refreshing) {
         return (
@@ -106,6 +117,7 @@ export default function ServicesPage() {
                             colors={[Colors.light.red90]}
                         />
                     }
+                    onScroll={onScroll}
                     ListEmptyComponent={
                         <Text style={styles.emptyListText}>
                             No services available
@@ -113,15 +125,18 @@ export default function ServicesPage() {
                     }
                 />
                 {user && user.role === 'admin' && (
-                    <TouchableOpacity
-                        style={styles.floatingButton}
+                    <AnimatedFAB
+                        icon={'plus'}
+                        label={'Add Service'}
+                        extended={isExtended}
                         onPress={() => setModalVisible(true)}
-                    >
-                        <Ionicons name='add' size={24} color='white' />
-                        <Text style={styles.floatingButtonText}>
-                            Add Service
-                        </Text>
-                    </TouchableOpacity>
+                        visible={true}
+                        animateFrom={'right'}
+                        iconMode={'dynamic'}
+                        style={[styles.fab]}
+                        color={Colors.light.background}
+                        rippleColor={Colors.light.whiteOpacity35}
+                    />
                 )}
             </View>
 
@@ -160,10 +175,12 @@ export default function ServicesPage() {
                             }
                             keyboardType='numeric'
                         />
-                        <TouchableOpacity
+                        <TouchableRipple
                             style={styles.addButton}
                             onPress={handleAddService}
                             disabled={loading}
+                            rippleColor={Colors.light.whiteOpacity35}
+                            borderless={true}
                         >
                             {loading ? (
                                 <ActivityIndicator color='white' />
@@ -172,13 +189,15 @@ export default function ServicesPage() {
                                     Save Service
                                 </Text>
                             )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </TouchableRipple>
+                        <TouchableRipple
                             style={styles.cancelButton}
                             onPress={() => setModalVisible(false)}
+                            rippleColor={Colors.light.blackOpacity20}
+                            borderless={true}
                         >
                             <Text style={styles.cancelButtonText}>Cancel</Text>
-                        </TouchableOpacity>
+                        </TouchableRipple>
                     </View>
                 </View>
             </Modal>
@@ -212,16 +231,15 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     categoryItem: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         backgroundColor: Colors.light.cardBg,
         borderRadius: 16,
-        padding: 16,
         marginBottom: 12,
     },
     categoryContent: {
-        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
     },
     categoryName: {
         fontSize: 18,
@@ -233,20 +251,12 @@ const styles = StyleSheet.create({
         color: Colors.light.red60,
         marginTop: 4,
     },
-    floatingButton: {
+    fab: {
         position: 'absolute',
-        right: 20,
-        bottom: 20,
+        margin: 16,
+        right: 0,
+        bottom: 0,
         backgroundColor: Colors.light.red90,
-        borderRadius: 30,
-        padding: 15,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    floatingButtonText: {
-        color: 'white',
-        marginLeft: 8,
-        fontWeight: 'bold',
     },
     modalContainer: {
         flex: 1,

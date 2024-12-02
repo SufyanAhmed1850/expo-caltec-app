@@ -8,14 +8,13 @@ import {
     ActivityIndicator,
     Alert,
     FlatList,
-    Modal,
     SafeAreaView,
     StyleSheet,
     Text,
     TextInput,
-    TouchableOpacity,
     View,
 } from 'react-native';
+import { TouchableRipple, Menu, Modal, Portal } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 
 export default function CategoryServicesPage() {
@@ -23,7 +22,8 @@ export default function CategoryServicesPage() {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
     const [selectedService, setSelectedService] = useState(null);
-    const [isMenuVisible, setIsMenuVisible] = useState(false);
+    const [menuVisible, setMenuVisible] = useState(false);
+    const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [editedService, setEditedService] = useState({ name: '', price: '' });
     const { category } = useLocalSearchParams();
@@ -52,10 +52,12 @@ export default function CategoryServicesPage() {
         }
     };
 
-    const handleLongPress = (service) => {
+    const handleLongPress = (service, event) => {
         if (user && user.role === 'admin') {
+            const { nativeEvent } = event;
             setSelectedService(service);
-            setIsMenuVisible(true);
+            setMenuPosition({ x: nativeEvent.pageX, y: nativeEvent.pageY });
+            setMenuVisible(true);
         }
     };
 
@@ -79,7 +81,7 @@ export default function CategoryServicesPage() {
             try {
                 await deleteService(selectedService.id);
                 fetchCategoryServices();
-                setIsMenuVisible(false);
+                setMenuVisible(false);
                 Toast.show({
                     type: 'success',
                     text1: 'Success',
@@ -102,7 +104,7 @@ export default function CategoryServicesPage() {
             price: selectedService.price.toString(),
         });
         setIsEditModalVisible(true);
-        setIsMenuVisible(false);
+        setMenuVisible(false);
     };
 
     const handleUpdateService = async () => {
@@ -135,9 +137,11 @@ export default function CategoryServicesPage() {
     };
 
     const renderServiceItem = ({ item }) => (
-        <TouchableOpacity
+        <TouchableRipple
             style={styles.serviceItem}
-            onLongPress={() => handleLongPress(item)}
+            onLongPress={(event) => handleLongPress(item, event)}
+            rippleColor={Colors.light.blackOpacity20}
+            borderless
         >
             <View style={styles.serviceContent}>
                 <Text style={styles.serviceName}>{item.name}</Text>
@@ -145,7 +149,7 @@ export default function CategoryServicesPage() {
                     {item.price.toLocaleString()} {item.currency || 'PKR'}
                 </Text>
             </View>
-        </TouchableOpacity>
+        </TouchableRipple>
     );
 
     if (loading) {
@@ -174,95 +178,101 @@ export default function CategoryServicesPage() {
                 />
             </View>
 
-            {/* Admin Menu Modal */}
-            <Modal
-                animationType='fade'
-                transparent={true}
-                statusBarTranslucent={true}
-                visible={isMenuVisible}
-                onRequestClose={() => setIsMenuVisible(false)}
+            <Menu
+                visible={menuVisible}
+                onDismiss={() => setMenuVisible(false)}
+                anchor={menuPosition}
+                contentStyle={{ backgroundColor: Colors.light.background }}
             >
-                <TouchableOpacity
-                    style={styles.modalOverlay}
-                    activeOpacity={1}
-                    onPressOut={() => setIsMenuVisible(false)}
-                >
-                    <View style={styles.menuContainer}>
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={handleEdit}
-                        >
-                            <IconEdit pathStroke={Colors.light.blue90} />
-                            <Text style={styles.menuText}>Edit</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.menuItem}
-                            onPress={handleDelete}
-                        >
-                            <IconDelete pathStroke={Colors.light.red90} />
-                            <Text style={styles.menuText}>Delete</Text>
-                        </TouchableOpacity>
-                    </View>
-                </TouchableOpacity>
-            </Modal>
+                <Menu.Item
+                    onPress={handleEdit}
+                    title='Edit'
+                    leadingIcon='pencil'
+                    titleStyle={{ color: Colors.light.text }}
+                />
+                <Menu.Item
+                    onPress={handleDelete}
+                    title='Delete'
+                    leadingIcon='delete'
+                    titleStyle={{ color: Colors.light.red90 }}
+                />
+            </Menu>
 
-            {/* Edit Service Modal */}
-            <Modal
-                animationType='fade'
-                transparent={true}
-                statusBarTranslucent={true}
-                visible={isEditModalVisible}
-                onRequestClose={() => setIsEditModalVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Edit Service</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder='Service Name'
-                            value={editedService.name}
-                            onChangeText={(text) =>
-                                setEditedService({
-                                    ...editedService,
-                                    name: text,
-                                })
-                            }
-                        />
-                        <TextInput
-                            style={styles.input}
-                            placeholder='Service Price'
-                            value={editedService.price}
-                            onChangeText={(text) =>
-                                setEditedService({
-                                    ...editedService,
-                                    price: text,
-                                })
-                            }
-                            keyboardType='numeric'
-                        />
-                        <TouchableOpacity
-                            style={styles.updateButton}
-                            onPress={handleUpdateService}
-                            disabled={updating}
+            <Portal>
+                <Modal
+                    visible={isEditModalVisible}
+                    onDismiss={() => setIsEditModalVisible(false)}
+                    contentContainerStyle={[
+                        styles.modalContent,
+                        { backgroundColor: Colors.light.background },
+                    ]}
+                >
+                    <Text
+                        style={[
+                            styles.modalTitle,
+                            { color: Colors.light.text },
+                        ]}
+                    >
+                        Edit Service
+                    </Text>
+                    <TextInput
+                        style={[
+                            styles.input,
+                            {
+                                backgroundColor: Colors.light.cardBg,
+                                color: Colors.light.text,
+                            },
+                        ]}
+                        placeholder='Service Name'
+                        placeholderTextColor={Colors.light.black30}
+                        value={editedService.name}
+                        onChangeText={(text) =>
+                            setEditedService({
+                                ...editedService,
+                                name: text,
+                            })
+                        }
+                    />
+                    <TextInput
+                        style={[
+                            styles.input,
+                            {
+                                backgroundColor: Colors.light.cardBg,
+                                color: Colors.light.text,
+                            },
+                        ]}
+                        placeholder='Service Price'
+                        placeholderTextColor={Colors.light.black30}
+                        value={editedService.price}
+                        onChangeText={(text) =>
+                            setEditedService({
+                                ...editedService,
+                                price: text,
+                            })
+                        }
+                        keyboardType='numeric'
+                    />
+                    <TouchableRipple
+                        style={[
+                            styles.updateButton,
+                            { backgroundColor: Colors.light.red90 },
+                        ]}
+                        onPress={handleUpdateService}
+                        disabled={updating}
+                        rippleColor={Colors.light.whiteOpacity35}
+                        borderless
+                    >
+                        <Text
+                            style={[
+                                styles.updateButtonText,
+                                { color: Colors.light.background },
+                            ]}
                         >
-                            {updating ? (
-                                <ActivityIndicator color='white' />
-                            ) : (
-                                <Text style={styles.updateButtonText}>
-                                    Update Service
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.cancelButton}
-                            onPress={() => setIsEditModalVisible(false)}
-                            disabled={updating}
-                        >
-                            <Text style={styles.cancelButtonText}>Cancel</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+                            {updating ? 'Updating...' : 'Update Service'}
+                        </Text>
+                    </TouchableRipple>
+                </Modal>
+            </Portal>
 
             <Toast />
         </SafeAreaView>
@@ -295,7 +305,7 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     serviceItem: {
-        backgroundColor: '#F5F5F5',
+        backgroundColor: Colors.light.cardBg,
         borderRadius: 99,
         paddingVertical: 16,
         paddingHorizontal: 22,
@@ -308,7 +318,7 @@ const styles = StyleSheet.create({
     serviceName: {
         maxWidth: '75%',
         fontSize: 16,
-        color: Colors.light.black60,
+        color: Colors.light.text,
     },
     servicePrice: {
         fontSize: 14,
@@ -320,33 +330,10 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: Colors.light.black60,
     },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    menuContainer: {
-        backgroundColor: 'white',
-        borderRadius: 10,
-        padding: 20,
-        minWidth: 200,
-    },
-    menuItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 10,
-    },
-    menuText: {
-        marginLeft: 10,
-        fontSize: 16,
-        color: Colors.light.text,
-    },
     modalContent: {
-        backgroundColor: 'white',
         borderRadius: 20,
         padding: 20,
-        width: '80%',
+        margin: 20,
     },
     modalTitle: {
         fontSize: 20,
@@ -356,34 +343,20 @@ const styles = StyleSheet.create({
         color: Colors.light.text,
     },
     input: {
-        backgroundColor: '#FFFFFF',
         borderWidth: 1,
         borderColor: Colors.light.black30,
         borderRadius: 99,
         paddingVertical: 10,
         paddingHorizontal: 14,
-        color: Colors.light.text,
         marginBottom: 15,
     },
     updateButton: {
-        backgroundColor: Colors.light.blue90,
         marginTop: 10,
         paddingVertical: 14,
         borderRadius: 99,
         alignItems: 'center',
     },
     updateButtonText: {
-        color: 'white',
         fontWeight: 'bold',
-    },
-    cancelButton: {
-        marginTop: 10,
-        paddingVertical: 14,
-        backgroundColor: Colors.light.cardBg,
-        borderRadius: 99,
-        alignItems: 'center',
-    },
-    cancelButtonText: {
-        color: Colors.light.red90,
     },
 });
