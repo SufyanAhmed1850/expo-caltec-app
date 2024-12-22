@@ -65,6 +65,7 @@ export const EnquiryProvider = ({ children }) => {
                 ...enquiryData,
                 enquiryNumber,
                 status: enquiryData.status || "Pending",
+                isSeen: false, // Add this line
                 instruments: enquiryData.instruments.map((instrument) => ({
                     ...instrument,
                     customPrice:

@@ -31,10 +31,10 @@ export default function NewEnquiry() {
         fax: "",
         email: "",
         placeOfCalibration: "Site",
-        instruments: [{ name: "", quantity: "", price: 0, customPrice: 0 }],
+        instruments: [{ name: "", quantity: "", price: "", customPrice: "" }],
         comments: "",
         totalAmount: 0,
-        discountPercentage: 0,
+        discountPercentage: "",
         discountedAmount: 0,
         status: "Pending",
     });
@@ -59,15 +59,24 @@ export default function NewEnquiry() {
 
     const calculateTotalAmount = () => {
         const total = formData.instruments.reduce((sum, instrument) => {
-            const price =
-                instrument.customPrice > 0
-                    ? instrument.customPrice
-                    : instrument.price;
+            const price = instrument.price;
             return sum + price * instrument.quantity;
         }, 0);
 
-        const discountAmount = (total * formData.discountPercentage) / 100;
-        const discountedTotal = total - discountAmount;
+        let discountAmount;
+        let discountedTotal;
+        if (formData.discountPercentage) {
+            discountAmount = (total * formData.discountPercentage) / 100;
+            discountedTotal = total - discountAmount;
+        } else {
+            discountedTotal = formData.instruments.reduce((sum, instrument) => {
+                const price =
+                    instrument.customPrice > 0
+                        ? instrument.customPrice
+                        : instrument.price;
+                return sum + price * instrument.quantity;
+            }, 0);
+        }
 
         setFormData((prev) => ({
             ...prev,
@@ -81,7 +90,7 @@ export default function NewEnquiry() {
             ...formData,
             instruments: [
                 ...formData.instruments,
-                { name: "", quantity: "", price: 0, customPrice: 0 },
+                { name: "", quantity: "", price: "", customPrice: "" },
             ],
         });
     };
@@ -116,22 +125,22 @@ export default function NewEnquiry() {
     };
 
     const handleDiscountChange = (value) => {
-        const discount = parseFloat(value) || 0;
+        const discount = parseFloat(value) || "";
         setFormData((prev) => ({
             ...prev,
             discountPercentage: discount,
             instruments: prev.instruments.map((instrument) => ({
                 ...instrument,
-                customPrice: 0, // Reset custom price when applying discount
+                customPrice: "", // Reset custom price when applying discount
             })),
         }));
     };
 
     const handleCustomPriceChange = (index, value) => {
-        updateInstrument(index, "customPrice", parseFloat(value) || 0);
+        updateInstrument(index, "customPrice", parseFloat(value) || "");
         setFormData((prev) => ({
             ...prev,
-            discountPercentage: 0, // Reset discount when applying custom price
+            discountPercentage: "", // Reset discount when applying custom price
         }));
     };
 
@@ -171,15 +180,14 @@ export default function NewEnquiry() {
             if (success) {
                 // Make a POST request to localhost:8000
                 const response = await fetch(
-                    "http://192.168.0.107:8000/mail/",
+                    "https://mail-server-caltec-app.onrender.com/mail/",
                     {
                         method: "POST",
                         headers: {
                             "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
-                            subject: `Enquiry - Caltec App`,
-                            body: JSON.stringify(enquiryData),
+                            data: JSON.stringify(enquiryData),
                         }),
                     },
                 );
@@ -436,9 +444,7 @@ export default function NewEnquiry() {
                             />
                         </View>
                         <View style={styles.discountContainer}>
-                            <Text style={styles.discountLabel}>
-                                Discount %:
-                            </Text>
+                            <Text style={styles.discountLabel}>Ask % off:</Text>
                             <TextInput
                                 style={styles.percentDiscountInput}
                                 placeholder="Enter discount %"

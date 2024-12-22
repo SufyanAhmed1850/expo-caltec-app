@@ -1,30 +1,36 @@
-import React, { useState, useEffect } from "react";
+import { db } from "@/firebaseConfig";
+import StatusPill from "@/src/components/StatusPill";
+import { Colors } from "@/src/constants/Colors";
+import { useAuth } from "@/src/context/authContext";
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
+    IconMail,
+    IconPhone,
+    IconProfile,
+    IconLocation,
+} from "@constants/SvgIcons";
+import { Ionicons } from "@expo/vector-icons";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { Stack, useLocalSearchParams } from "expo-router";
+import {
+    collection,
+    doc,
+    getDocs,
+    query,
+    updateDoc,
+    where,
+} from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import {
     ActivityIndicator,
     SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
-import { useLocalSearchParams, Stack } from "expo-router";
-import {
-    doc,
-    getDoc,
-    updateDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-} from "firebase/firestore";
-import { db } from "@/firebaseConfig";
-import { useAuth } from "@/src/context/authContext";
-import { Colors } from "@/src/constants/Colors";
+import { DataTable, TouchableRipple } from "react-native-paper";
 import Toast from "react-native-toast-message";
-import { IconProfile, IconPhone, IconMail } from "@constants/SvgIcons";
-import { Ionicons } from "@expo/vector-icons";
-import StatusPill from "@/src/components/StatusPill";
 
 export default function EnquiryDetailsPage() {
     const { enquiry } = useLocalSearchParams();
@@ -39,6 +45,7 @@ export default function EnquiryDetailsPage() {
     }, [enquiry]);
 
     const fetchEnquiryDetails = async () => {
+        setLoading(true);
         try {
             const enquiriesRef = collection(db, "enquiries");
             const q = query(
@@ -49,7 +56,14 @@ export default function EnquiryDetailsPage() {
 
             if (!querySnapshot.empty) {
                 const enquiryDoc = querySnapshot.docs[0];
-                setEnquiryData({ id: enquiryDoc.id, ...enquiryDoc.data() });
+                const enquiryData = { id: enquiryDoc.id, ...enquiryDoc.data() };
+                setEnquiryData(enquiryData);
+
+                // Mark as seen if user is admin and enquiry is not seen
+                if (user?.role === "admin" && !enquiryData.isSeen) {
+                    const enquiryRef = doc(db, "enquiries", enquiryDoc.id);
+                    await updateDoc(enquiryRef, { isSeen: true });
+                }
             } else {
                 Toast.show({
                     type: "error",
@@ -116,7 +130,14 @@ export default function EnquiryDetailsPage() {
                         {enquiryData?.enquiryNumber}
                     </Text>
                     <Text style={styles.date}>
-                        {new Date(enquiryData?.timestamp).toLocaleDateString()}
+                        {new Date(enquiryData?.timestamp).toLocaleDateString(
+                            "en-US",
+                            {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                            },
+                        )}
                     </Text>
                     <StatusPill status={enquiryData?.status} />
                 </View>
@@ -131,7 +152,7 @@ export default function EnquiryDetailsPage() {
                             style={styles.icon}
                         />
                         <Text style={styles.infoText}>
-                            {enquiryData?.userName}
+                            {enquiryData?.userName} - {enquiryData?.designation}
                         </Text>
                     </View>
                     <View style={styles.infoRow}>
@@ -143,6 +164,17 @@ export default function EnquiryDetailsPage() {
                         />
                         <Text style={styles.infoText}>
                             {enquiryData?.companyName}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <IconLocation
+                            width={20}
+                            height={20}
+                            pathStroke={Colors.light.black60}
+                            style={styles.icon}
+                        />
+                        <Text style={styles.infoText}>
+                            {enquiryData?.address}
                         </Text>
                     </View>
                     <View style={styles.infoRow}>
@@ -167,6 +199,14 @@ export default function EnquiryDetailsPage() {
                             {enquiryData?.phone}
                         </Text>
                     </View>
+                    <View style={styles.infoRow}>
+                        <MaterialCommunityIcons
+                            name="fax"
+                            size={20}
+                            color={Colors.light.black60}
+                        />
+                        <Text style={styles.infoText}>{enquiryData?.fax}</Text>
+                    </View>
                 </View>
 
                 <View style={styles.infoCard}>
@@ -179,7 +219,7 @@ export default function EnquiryDetailsPage() {
                             style={styles.icon}
                         />
                         <Text style={styles.infoText}>
-                            Place of Calibration:{" "}
+                            Calibration Location:{" "}
                             {enquiryData?.placeOfCalibration}
                         </Text>
                     </View>
@@ -197,6 +237,18 @@ export default function EnquiryDetailsPage() {
                     </View>
                     <View style={styles.infoRow}>
                         <Ionicons
+                            name="cash-outline"
+                            size={20}
+                            color={Colors.light.black60}
+                            style={styles.icon}
+                        />
+                        <Text style={styles.infoText}>
+                            Total Discounted Amount: PKR{" "}
+                            {enquiryData?.discountedAmount.toLocaleString()}
+                        </Text>
+                    </View>
+                    <View style={styles.infoRow}>
+                        <Ionicons
                             name="document-text-outline"
                             size={20}
                             color={Colors.light.black60}
@@ -210,47 +262,72 @@ export default function EnquiryDetailsPage() {
 
                 <View style={styles.infoCard}>
                     <Text style={styles.sectionTitle}>Instruments</Text>
-                    {enquiryData?.instruments.map((instrument, index) => (
-                        <View
-                            key={index}
-                            style={[
-                                styles.instrumentItem,
-                                index < enquiryData.instruments.length - 1 &&
-                                    styles.instrumentItemBorder,
-                            ]}
-                        >
-                            <Text style={styles.instrumentName}>
-                                {instrument.name}
-                            </Text>
-                            <Text style={styles.instrumentDetail}>
-                                Quantity: {instrument.quantity}
-                            </Text>
-                            <Text style={styles.instrumentDetail}>
-                                Default Price: PKR{" "}
-                                {instrument.price.toLocaleString()}
-                            </Text>
-                            <Text style={styles.instrumentDetail}>
-                                Custom Price: PKR{" "}
-                                {instrument.customPrice
-                                    ? instrument.customPrice.toLocaleString()
-                                    : "N/A"}
-                            </Text>
-                            <Text style={styles.instrumentDetail}>
-                                Total Price: PKR{" "}
-                                {instrument.totalPrice.toLocaleString()}
-                            </Text>
-                        </View>
-                    ))}
+                    <ScrollView horizontal>
+                        <DataTable style={styles.dataTable}>
+                            <DataTable.Header style={styles.tableHeader}>
+                                {[
+                                    "Name",
+                                    "Quantity",
+                                    "Default Price",
+                                    "Custom Price",
+                                    "Total Price",
+                                ].map((title, index) => (
+                                    <DataTable.Title
+                                        key={index}
+                                        style={[styles.tableCell]}
+                                    >
+                                        <Text style={styles.headerText}>
+                                            {title}
+                                        </Text>
+                                    </DataTable.Title>
+                                ))}
+                            </DataTable.Header>
+
+                            {enquiryData?.instruments.map(
+                                (instrument, index) => (
+                                    <DataTable.Row
+                                        key={index}
+                                        style={styles.tableRow}
+                                    >
+                                        {[
+                                            instrument.name,
+                                            instrument.quantity,
+                                            `PKR ${instrument.price.toLocaleString()}`,
+                                            instrument.customPrice
+                                                ? `PKR ${instrument.customPrice.toLocaleString()}`
+                                                : "N/A",
+                                            `PKR ${instrument.totalPrice.toLocaleString()}`,
+                                        ].map((cellData, cellIndex) => (
+                                            <DataTable.Cell
+                                                key={cellIndex}
+                                                style={styles.tableCell}
+                                            >
+                                                <Text style={styles.cellText}>
+                                                    {cellData}
+                                                </Text>
+                                            </DataTable.Cell>
+                                        ))}
+                                    </DataTable.Row>
+                                ),
+                            )}
+                        </DataTable>
+                    </ScrollView>
                 </View>
 
                 {user?.role === "admin" && (
                     <View style={styles.adminActions}>
                         <Text style={styles.sectionTitle}>Admin Actions</Text>
                         <View style={styles.buttonContainer}>
-                            <TouchableOpacity
+                            <TouchableRipple
                                 style={[styles.button, styles.approveButton]}
                                 onPress={() => updateEnquiryStatus("Approved")}
-                                disabled={approvingStatus || decliningStatus}
+                                disabled={
+                                    approvingStatus ||
+                                    decliningStatus ||
+                                    enquiryData?.status === "Approved"
+                                }
+                                rippleColor={Colors.light.blackOpacity20}
+                                borderless
                             >
                                 {approvingStatus ? (
                                     <ActivityIndicator color="white" />
@@ -259,11 +336,17 @@ export default function EnquiryDetailsPage() {
                                         Approve
                                     </Text>
                                 )}
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </TouchableRipple>
+                            <TouchableRipple
                                 style={[styles.button, styles.declineButton]}
                                 onPress={() => updateEnquiryStatus("Declined")}
-                                disabled={approvingStatus || decliningStatus}
+                                disabled={
+                                    approvingStatus ||
+                                    decliningStatus ||
+                                    enquiryData?.status === "Declined"
+                                }
+                                rippleColor={Colors.light.whiteOpacity35}
+                                borderless
                             >
                                 {decliningStatus ? (
                                     <ActivityIndicator color="white" />
@@ -272,7 +355,7 @@ export default function EnquiryDetailsPage() {
                                         Decline
                                     </Text>
                                 )}
-                            </TouchableOpacity>
+                            </TouchableRipple>
                         </View>
                     </View>
                 )}
@@ -376,7 +459,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
     approveButton: {
-        backgroundColor: "#33D69F",
+        backgroundColor: "#60BF81",
         marginRight: 8,
     },
     declineButton: {
@@ -387,5 +470,35 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 16,
         fontWeight: "bold",
+    },
+    infoCard: {
+        backgroundColor: Colors.light.cardBg,
+        borderRadius: 20,
+        padding: 16,
+        marginBottom: 16,
+    },
+    dataTable: {
+        backgroundColor: Colors.light.background,
+    },
+    tableHeader: {
+        backgroundColor: Colors.light.red90,
+    },
+    headerText: {
+        color: Colors.light.background,
+        fontWeight: "bold",
+    },
+    tableRow: {
+        borderBottomWidth: 1,
+        borderBottomColor: Colors.light.black10,
+    },
+    tableCell: {
+        flex: 1,
+        justifyContent: "center",
+        textAlign: "left",
+        minWidth: 150,
+        maxWidth: 150,
+    },
+    cellText: {
+        color: Colors.light.text,
     },
 });
