@@ -1,13 +1,13 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Colors } from "@constants/Colors";
 import {
-    IconHome,
-    IconServices,
     IconEnquiry,
+    IconHome,
     IconProfile,
-} from '@constants/SvgIcons';
-import { Colors } from '@constants/Colors';
-import { Tabs } from 'expo-router';
+    IconServices,
+} from "@constants/SvgIcons";
+import { Tabs } from "expo-router";
+import React from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function TabsLayout() {
     return (
@@ -18,9 +18,9 @@ export default function TabsLayout() {
                 },
                 headerTintColor: Colors.light.background,
                 headerTitleStyle: {
-                    fontWeight: 'bold',
+                    fontWeight: "bold",
                 },
-                headerTitleAlign: 'center',
+                headerTitleAlign: "center",
                 tabBarStyle: {
                     backgroundColor: Colors.light.background,
                     height: 72,
@@ -34,9 +34,9 @@ export default function TabsLayout() {
             }}
         >
             <Tabs.Screen
-                name='home'
+                name="home"
                 options={{
-                    title: 'Home',
+                    title: "Caltec Instrument Services Co.",
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>
                             <IconHome
@@ -44,7 +44,7 @@ export default function TabsLayout() {
                                 height={24}
                                 fill={focused && Colors.light.red90}
                                 pathStroke={
-                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                    focused ? Colors.light.red90 : "#9E9E9E"
                                 }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
@@ -55,10 +55,10 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name='services'
+                name="services"
                 options={{
                     headerShown: false,
-                    title: 'Services',
+                    title: "Services",
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>
                             <IconServices
@@ -66,7 +66,7 @@ export default function TabsLayout() {
                                 height={24}
                                 fill={focused && Colors.light.red90}
                                 pathStroke={
-                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                    focused ? Colors.light.red90 : "#9E9E9E"
                                 }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
@@ -77,10 +77,10 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name='enquiry'
+                name="enquiry"
                 options={{
                     headerShown: false,
-                    title: 'Enquiry',
+                    title: "Enquiry",
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>
                             <IconEnquiry
@@ -88,7 +88,7 @@ export default function TabsLayout() {
                                 height={24}
                                 fill={focused && Colors.light.red90}
                                 pathStroke={
-                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                    focused ? Colors.light.red90 : "#9E9E9E"
                                 }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
@@ -99,10 +99,10 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name='user'
+                name="user"
                 options={{
                     headerShown: false,
-                    title: 'Profile',
+                    title: "Profile",
                     tabBarIcon: ({ color, size, focused }) => (
                         <View style={styles.tab}>
                             <IconProfile
@@ -110,7 +110,7 @@ export default function TabsLayout() {
                                 height={24}
                                 fill={focused && Colors.light.red90}
                                 pathStroke={
-                                    focused ? Colors.light.red90 : '#9E9E9E'
+                                    focused ? Colors.light.red90 : "#9E9E9E"
                                 }
                             />
                             <Text style={{ color, fontSize: 12, marginTop: 2 }}>
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     tab: {
         flex: 1,
         aspectRatio: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
     },
 });

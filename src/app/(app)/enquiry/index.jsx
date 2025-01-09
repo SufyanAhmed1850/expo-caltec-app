@@ -169,7 +169,7 @@ export default function EnquiryList() {
     );
 
     const handleEnquiryPress = async (item) => {
-        if (!item.isSeen) {
+        if (!item.isSeen && user.role === "admin") {
             try {
                 const enquiryRef = doc(db, "enquiries", item.id);
                 await updateDoc(enquiryRef, { isSeen: true });

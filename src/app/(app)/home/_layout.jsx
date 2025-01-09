@@ -1,6 +1,6 @@
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { withLayoutContext } from 'expo-router';
-import { Colors } from '@constants/Colors';
+import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
+import { withLayoutContext } from "expo-router";
+import { Colors } from "@constants/Colors";
 
 const { Navigator } = createMaterialTopTabNavigator();
 
@@ -13,18 +13,15 @@ const Layout = () => {
                 tabBarIndicatorStyle: { backgroundColor: Colors.light.red90 },
                 tabBarLabelStyle: {
                     fontSize: 14,
-                    fontWeight: 'bold',
-                    textTransform: 'capitalize',
+                    fontWeight: "bold",
+                    textTransform: "capitalize",
                 },
             }}
         >
+            <MaterialTopTabs.Screen name="index" options={{ title: "Home" }} />
             <MaterialTopTabs.Screen
-                name='index'
-                options={{ title: 'Caltec' }}
-            />
-            <MaterialTopTabs.Screen
-                name='contact'
-                options={{ title: 'Contact' }}
+                name="contact"
+                options={{ title: "Contact" }}
             />
         </MaterialTopTabs>
     );
