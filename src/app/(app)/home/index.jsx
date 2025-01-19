@@ -4,7 +4,7 @@ import CertifiedSection from "@/src/components/CertifiedSection";
 import LocationSection from "@/src/components/LocationSection";
 import { Colors } from "@/src/constants/Colors";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text } from "react-native";
 
 export default function Home() {
     return (

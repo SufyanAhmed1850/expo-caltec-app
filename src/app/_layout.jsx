@@ -20,7 +20,7 @@ const MainLayout = () => {
             return;
         }
 
-        console.log("Current segments:", segments);
+        // console.log("Current segments:", segments);
 
         const inAuthGroup = segments[0] === "(auth)";
         const isNotFound = segments[0] === "+not-found";

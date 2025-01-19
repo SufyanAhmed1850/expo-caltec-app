@@ -1,16 +1,17 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useState, useRef } from "react";
 import {
     View,
-    Animated,
-    Dimensions,
-    StyleSheet,
-    Easing,
     Text,
+    StyleSheet,
+    Dimensions,
+    FlatList,
+    TouchableOpacity,
     Image,
 } from "react-native";
-import { Portal, Modal } from "react-native-paper";
+import { Portal, Modal, TouchableRipple, Button } from "react-native-paper";
 import Card from "@components/Card";
 
+// Import all your assets here
 import thermal from "@assets/icons/light/thermal.png";
 import controlValve from "@assets/icons/light/control-valve.png";
 import electrical from "@assets/icons/light/electrical.png";
@@ -31,6 +32,8 @@ import fieldCatalog from "@assets/images/Field_Instrument_Calibration.png";
 import electricalCatalog from "@assets/images/Electrical_Instrument_Calibration.png";
 import controlValveCatalog from "@assets/images/Control_Valve_Service_Division.png";
 import pressureCatalog from "@assets/images/Pressure_Instrument_Calibration.png";
+import { IconArrowRight } from "../constants/SvgIcons";
+import { Colors } from "../constants/Colors";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = 320;
@@ -107,73 +110,29 @@ const SERVICES = [
         catalog: pressureCatalog,
     },
 ];
-
 const CardSlider = () => {
-    const scrollX = useRef(new Animated.Value(0)).current;
+    const [currentIndex, setCurrentIndex] = useState(0);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedCatalog, setSelectedCatalog] = useState(null);
-
-    useEffect(() => {
-        const animate = () => {
-            Animated.timing(scrollX, {
-                toValue: -CARD_WIDTH * SERVICES.length,
-                duration: 100000,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            }).start(({ finished }) => {
-                if (finished) {
-                    scrollX.setValue(0);
-                    animate();
-                }
-            });
-        };
-
-        animate();
-
-        return () => {
-            scrollX.stopAnimation();
-        };
-    }, []);
+    const flatListRef = useRef(null);
 
     const handleViewCatalog = (catalog) => {
-        console.log(catalog);
-
         setSelectedCatalog(catalog);
         setModalVisible(true);
     };
 
-    const renderCards = () => {
-        return (
-            <>
-                {SERVICES.map((service, index) => (
-                    <View key={`card-${index}`} style={styles.cardContainer}>
-                        <Card
-                            icon={service.icon}
-                            title={service.title}
-                            description={service.description}
-                            onViewCatalog={() =>
-                                handleViewCatalog(service.catalog)
-                            }
-                        />
-                    </View>
-                ))}
-                {SERVICES.map((service, index) => (
-                    <View
-                        key={`card-duplicate-${index}`}
-                        style={styles.cardContainer}
-                    >
-                        <Card
-                            icon={service.icon}
-                            title={service.title}
-                            description={service.description}
-                            onViewCatalog={() =>
-                                handleViewCatalog(service.catalog)
-                            }
-                        />
-                    </View>
-                ))}
-            </>
-        );
+    const handlePrevious = () => {
+        if (currentIndex > 0) {
+            flatListRef.current.scrollToIndex({ index: currentIndex - 1 });
+            setCurrentIndex(currentIndex - 1);
+        }
+    };
+
+    const handleNext = () => {
+        if (currentIndex < SERVICES.length - 1) {
+            flatListRef.current.scrollToIndex({ index: currentIndex + 1 });
+            setCurrentIndex(currentIndex + 1);
+        }
     };
 
     return (
@@ -184,17 +143,60 @@ const CardSlider = () => {
                 precision instruments, mechanical tools, and more to ensure
                 compliance and accuracy.
             </Text>
-            <View style={styles.sliderContainer}>
-                <Animated.View
+            <FlatList
+                ref={flatListRef}
+                data={SERVICES}
+                renderItem={({ item: service }) => (
+                    <View style={styles.cardContainer}>
+                        <Card
+                            icon={service.icon}
+                            title={service.title}
+                            description={service.description}
+                            onViewCatalog={() =>
+                                handleViewCatalog(service.catalog)
+                            }
+                        />
+                    </View>
+                )}
+                keyExtractor={(item, index) => `card-${index}`}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                snapToInterval={CARD_WIDTH}
+                decelerationRate="fast"
+                onMomentumScrollEnd={(event) => {
+                    const newIndex = Math.round(
+                        event.nativeEvent.contentOffset.x / CARD_WIDTH,
+                    );
+                    setCurrentIndex(newIndex);
+                }}
+            />
+            <View style={styles.navigationButtons}>
+                <Button
+                    onPress={handlePrevious}
                     style={[
-                        styles.slider,
-                        {
-                            transform: [{ translateX: scrollX }],
-                        },
+                        styles.navButton,
+                        { transform: [{ rotate: "180deg" }] },
                     ]}
+                    rippleColor={Colors.light.whiteOpacity35}
                 >
-                    {renderCards()}
-                </Animated.View>
+                    <IconArrowRight
+                        pathStroke={"#FFFFFF"}
+                        height={18}
+                        width={18}
+                    />
+                </Button>
+                <Button
+                    onPress={handleNext}
+                    style={styles.navButton}
+                    rippleColor={Colors.light.whiteOpacity35}
+                >
+                    <IconArrowRight
+                        pathStroke={"#FFFFFF"}
+                        height={18}
+                        width={18}
+                    />
+                </Button>
             </View>
             <Portal>
                 <Modal
@@ -218,10 +220,7 @@ const CardSlider = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-    },
-    slider: {
-        flexDirection: "row",
-        width: CARD_WIDTH * (SERVICES.length * 2),
+        backgroundColor: "#fff",
     },
     title: {
         fontSize: 24,
@@ -237,11 +236,24 @@ const styles = StyleSheet.create({
         color: "#7C8E9A",
         textAlign: "center",
         paddingHorizontal: 20,
+        marginBottom: 20,
     },
     cardContainer: {
         width: CARD_WIDTH,
         paddingVertical: 24,
         alignItems: "center",
+    },
+    navigationButtons: {
+        flexDirection: "row",
+        justifyContent: "center",
+        gap: 18,
+        marginVertical: 20,
+    },
+    navButton: {
+        backgroundColor: "#02203C",
+        // justifyContent: "center",
+        // alignItems: "center",
+        borderRadius: 99,
     },
     modalContainer: {
         backgroundColor: "white",

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
+import React, { createContext, useState, useContext, useCallback } from "react";
 import {
     collection,
     addDoc,
@@ -8,9 +8,9 @@ import {
     deleteDoc,
     updateDoc,
     doc,
-} from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import { Alert } from 'react-native';
+} from "firebase/firestore";
+import { db } from "@/firebaseConfig";
+import { Alert } from "react-native";
 
 const ServiceContext = createContext();
 
@@ -22,7 +22,7 @@ export const ServiceProvider = ({ children }) => {
     const fetchServices = useCallback(async () => {
         setLoading(true);
         try {
-            const servicesSnapshot = await getDocs(collection(db, 'services'));
+            const servicesSnapshot = await getDocs(collection(db, "services"));
             const servicesData = servicesSnapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
@@ -36,13 +36,13 @@ export const ServiceProvider = ({ children }) => {
             const categoriesWithCount = uniqueCategories.map((category) => ({
                 name: category,
                 servicesCount: servicesData.filter(
-                    (service) => service.category === category
+                    (service) => service.category === category,
                 ).length,
             }));
             setCategories(categoriesWithCount);
         } catch (error) {
-            console.error('Error fetching services:', error);
-            Alert.alert('Error', 'Failed to fetch services');
+            console.error("Error fetching services:", error);
+            Alert.alert("Error", "Failed to fetch services");
         } finally {
             setLoading(false);
         }
@@ -50,23 +50,23 @@ export const ServiceProvider = ({ children }) => {
 
     const addService = async (newService) => {
         if (!newService.category || !newService.name || !newService.price) {
-            Alert.alert('Error', 'Please fill all fields');
+            Alert.alert("Error", "Please fill all fields");
             return false;
         }
 
         setLoading(true);
         try {
-            await addDoc(collection(db, 'services'), {
+            await addDoc(collection(db, "services"), {
                 category: newService.category,
                 name: newService.name,
                 price: parseFloat(newService.price),
             });
-            Alert.alert('Success', 'Service added successfully');
+            Alert.alert("Success", "Service added successfully");
             await fetchServices(); // Refresh the services list
             return true;
         } catch (error) {
-            console.error('Error adding service:', error);
-            Alert.alert('Error', 'Failed to add service');
+            console.error("Error adding service:", error);
+            Alert.alert("Error", "Failed to add service");
             return false;
         } finally {
             setLoading(false);
@@ -77,8 +77,8 @@ export const ServiceProvider = ({ children }) => {
         setLoading(true);
         try {
             const q = query(
-                collection(db, 'services'),
-                where('category', '==', category)
+                collection(db, "services"),
+                where("category", "==", category),
             );
             const querySnapshot = await getDocs(q);
             const categoryServices = querySnapshot.docs.map((doc) => ({
@@ -87,8 +87,8 @@ export const ServiceProvider = ({ children }) => {
             }));
             return categoryServices;
         } catch (error) {
-            console.error('Error fetching services by category:', error);
-            Alert.alert('Error', 'Failed to fetch services for this category');
+            console.error("Error fetching services by category:", error);
+            Alert.alert("Error", "Failed to fetch services for this category");
             return [];
         } finally {
             setLoading(false);
@@ -98,12 +98,12 @@ export const ServiceProvider = ({ children }) => {
     const deleteService = async (serviceId) => {
         setLoading(true);
         try {
-            await deleteDoc(doc(db, 'services', serviceId));
+            await deleteDoc(doc(db, "services", serviceId));
             await fetchServices(); // Refresh the services list
             return true;
         } catch (error) {
-            console.error('Error deleting service:', error);
-            Alert.alert('Error', 'Failed to delete service');
+            console.error("Error deleting service:", error);
+            Alert.alert("Error", "Failed to delete service");
             return false;
         } finally {
             setLoading(false);
@@ -113,12 +113,12 @@ export const ServiceProvider = ({ children }) => {
     const updateService = async (serviceId, updatedService) => {
         setLoading(true);
         try {
-            await updateDoc(doc(db, 'services', serviceId), updatedService);
+            await updateDoc(doc(db, "services", serviceId), updatedService);
             await fetchServices(); // Refresh the services list
             return true;
         } catch (error) {
-            console.error('Error updating service:', error);
-            Alert.alert('Error', 'Failed to update service');
+            console.error("Error updating service:", error);
+            Alert.alert("Error", "Failed to update service");
             return false;
         } finally {
             setLoading(false);
@@ -146,7 +146,7 @@ export const ServiceProvider = ({ children }) => {
 export const useService = () => {
     const context = useContext(ServiceContext);
     if (!context) {
-        throw new Error('useService must be used within a ServiceProvider');
+        throw new Error("useService must be used within a ServiceProvider");
     }
     return context;
 };

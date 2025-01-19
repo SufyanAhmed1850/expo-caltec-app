@@ -1,7 +1,6 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Card } from "react-native-paper";
-import { IconDownload } from "@constants/SvgIcons.js";
 
 const CERTIFICATES = [
     {

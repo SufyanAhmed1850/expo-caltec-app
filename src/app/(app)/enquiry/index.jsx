@@ -111,7 +111,7 @@ export default function EnquiryList() {
                     text2: "Failed to delete enquiry",
                 });
             } finally {
-                setIsDeleting(false); // Set loading state to false
+                setIsDeleting(false);
             }
         }
     };
@@ -120,7 +120,9 @@ export default function EnquiryList() {
         <TouchableRipple
             style={[
                 styles.enquiryItemTouchable,
-                !item.isSeen && styles.unseenEnquiry,
+                !item.isSeen && user.role === "admin"
+                    ? styles.unseenEnquiry
+                    : null,
             ]}
             onPress={() => handleEnquiryPress(item)}
             rippleColor={Colors.light.black30}
