@@ -178,24 +178,6 @@ export default function NewEnquiry() {
         try {
             const success = await submitEnquiry(enquiryData);
             if (success) {
-                // Make a POST request to localhost:8000
-                const response = await fetch(
-                    "https://mail-server-caltec-app.onrender.com/mail/",
-                    {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify({
-                            data: JSON.stringify(enquiryData),
-                        }),
-                    },
-                );
-
-                if (!response.ok) {
-                    throw new Error("Failed to send data to server");
-                }
-
                 setSubmittedEnquiryNumber(enquiryData.enquiryNumber);
                 setFormData({
                     companyName: user.companyName || "",

@@ -41,7 +41,7 @@ const LocationSection = () => {
                         <Feather
                             name="map-pin"
                             size={size}
-                            color={Colors.light.white90}
+                            color={Colors.light.text}
                         />
                     )}
                 >
@@ -91,7 +91,9 @@ const styles = StyleSheet.create({
     },
     button: {
         borderRadius: 8,
-        backgroundColor: "#02203C",
+        backgroundColor: "transparent",
+        borderWidth: 1,
+        borderColor: "#02203C",
     },
 });
 
