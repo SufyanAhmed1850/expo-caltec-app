@@ -1,33 +1,41 @@
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import React from 'react';
-import { Colors } from '@constants/Colors';
-import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
+import { useColorScheme } from 'react-native';
+import {
+    AppTypography,
+    getAppPalette,
+    resolveThemePreference,
+} from '@constants/appTheme';
+import { useAuth } from '@context/authContext';
 
 const UsersStack = () => {
+    const systemScheme = useColorScheme();
+    const { userProfile } = useAuth();
+    const resolvedTheme = resolveThemePreference(
+        userProfile?.themePreference || 'system',
+        systemScheme
+    );
+    const colors = getAppPalette(resolvedTheme);
+
     return (
         <Stack
             screenOptions={{
-                headerStyle: { backgroundColor: Colors.light.red90 },
+                headerStyle: { backgroundColor: colors.card },
                 headerTitleAlign: 'center',
-                headerTintColor: '#fff',
+                headerTintColor: colors.text,
                 animation: 'slide_from_right',
-                navigationBarColor: Colors.light.background,
-                headerTitleStyle: { fontWeight: 'bold' },
-                headerLeft: ({ canGoBack }) =>
-                    canGoBack ? (
-                        <TouchableOpacity onPress={() => router.back()}>
-                            <Ionicons
-                                name='chevron-back'
-                                size={24}
-                                color='#fff'
-                            />
-                        </TouchableOpacity>
-                    ) : null,
+                navigationBarColor: colors.card,
+                headerTitleStyle: AppTypography.cardTitle,
             }}
         >
-            <Stack.Screen name='index' options={{ title: 'Profile' }} />
-            <Stack.Screen name='usersList' options={{ title: 'Users' }} />
+            <Stack.Screen
+                name='index'
+                options={{ headerShown: false, title: 'Profile' }}
+            />
+            <Stack.Screen
+                name='usersList'
+                options={{ headerShown: false, title: 'Users' }}
+            />
         </Stack>
     );
 };

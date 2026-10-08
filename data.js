@@ -26,7 +26,7 @@ const instrumentsList = [
     {
         name: 'Pressure Calibrator',
         category: 'Pressure Calibration',
-        price: 8500,
+        price: 8500, 
         currency: 'PKR',
     },
     {

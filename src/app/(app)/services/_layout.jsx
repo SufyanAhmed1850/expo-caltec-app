@@ -1,33 +1,33 @@
-import { router, Stack } from 'expo-router';
 import React from 'react';
-import { Colors } from '@constants/Colors';
-import { TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from 'react-native';
+import { Stack } from 'expo-router';
+
+import { useAuth } from '@context/authContext';
+import {
+    getAppPalette,
+    resolveThemePreference,
+} from '@constants/appTheme';
 
 const ServicesStack = () => {
+    const systemScheme = useColorScheme();
+    const { userProfile } = useAuth();
+    const resolvedTheme = resolveThemePreference(
+        userProfile?.themePreference,
+        systemScheme
+    );
+    const colors = getAppPalette(resolvedTheme);
+
     return (
         <Stack
             screenOptions={{
-                headerStyle: { backgroundColor: Colors.light.red90 },
-                headerTitleAlign: 'center',
-                headerTintColor: '#fff',
+                headerShown: false,
                 animation: 'slide_from_right',
-                navigationBarColor: Colors.light.background,
-                headerTitleStyle: { fontWeight: 'bold' },
-                headerLeft: ({ canGoBack }) =>
-                    canGoBack ? (
-                        <TouchableOpacity onPress={() => router.back()}>
-                            <Ionicons
-                                name='chevron-back'
-                                size={24}
-                                color='#fff'
-                            />
-                        </TouchableOpacity>
-                    ) : null,
+                contentStyle: { backgroundColor: colors.page },
+                navigationBarColor: colors.page,
             }}
         >
-            <Stack.Screen name='index' options={{ title: 'Services' }} />
-            <Stack.Screen name='[category]' options={{ title: 'Services' }} />
+            <Stack.Screen name='index' />
+            <Stack.Screen name='[category]' />
         </Stack>
     );
 };

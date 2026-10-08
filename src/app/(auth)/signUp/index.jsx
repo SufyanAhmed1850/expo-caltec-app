@@ -1,388 +1,277 @@
 import React, { useState } from 'react';
-import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    ScrollView,
-    KeyboardAvoidingView,
-    Platform,
-    Alert,
-    SafeAreaView,
-    Image,
-    ActivityIndicator,
-    Dimensions,
-} from 'react-native';
-import { useAuth } from '@context/authContext';
+import { Text, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Colors } from '@constants/Colors';
-import {
-    IconMail,
-    IconLock,
-    IconProfile,
-    IconPhone,
-    IconShow,
-    IconHide,
-} from '@constants/SvgIcons';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import { TouchableRipple } from 'react-native-paper';
 
-const { width } = Dimensions.get('window');
+import {
+    AuthField,
+    AuthMessage,
+    AuthPrimaryButton,
+    AuthScaffold,
+    AuthTextButton,
+    useAuthTheme,
+} from '@components/auth/AuthScaffold';
+import {
+    IconSolarEye,
+    IconSolarEyeClosed,
+    IconSolarLetter,
+    IconSolarLockPassword,
+    IconSolarUserRounded,
+} from '@constants/SvgIcons';
+import { useAuth } from '@context/authContext';
+import {
+    getLocalPasswordValidationMessage,
+    isValidEmailFormat,
+} from '@context/authUtils';
+
+const PasswordVisibilityToggle = ({ onPress, visible }) => {
+    const colors = useAuthTheme();
+
+    return (
+        <TouchableRipple
+            onPress={onPress}
+            rippleColor={
+                colors.isDark
+                    ? 'rgba(255,255,255,0.08)'
+                    : 'rgba(0, 0, 0, 0.08)'
+            }
+            borderless
+        >
+            {visible ? (
+                <IconSolarEyeClosed
+                    width={22}
+                    height={22}
+                    pathStroke={colors.muted}
+                />
+            ) : (
+                <IconSolarEye
+                    width={22}
+                    height={22}
+                    pathStroke={colors.muted}
+                />
+            )}
+        </TouchableRipple>
+    );
+};
+
+const PasswordNote = () => {
+    const colors = useAuthTheme();
+
+    return (
+        <View style={[styles.noteBox, { backgroundColor: colors.note }]}>
+            <Text style={[styles.noteText, { color: colors.secondary }]}>
+                Password must include 8+ characters, one uppercase letter, and
+                one number.
+            </Text>
+        </View>
+    );
+};
 
 const SignUp = () => {
-    const { register } = useAuth();
+    const { register, isLoading } = useAuth();
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [name, setName] = useState('');
-    const [companyName, setCompanyName] = useState('');
-    const [phone, setPhone] = useState('');
-    const [role, setRole] = useState('user');
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [profileImage, setProfileImage] = useState(null);
+    const [errors, setErrors] = useState({});
+    const [formMessage, setFormMessage] = useState('');
+
+    const handleReturnToLogin = () => {
+        router.replace('/(auth)/signIn');
+    };
+
+    const clearField = (field, value) => {
+        if (field === 'name') {
+            setName(value);
+        }
+
+        if (field === 'email') {
+            setEmail(value);
+        }
+
+        if (field === 'password') {
+            setPassword(value);
+        }
+
+        if (field === 'confirmPassword') {
+            setConfirmPassword(value);
+        }
+
+        setErrors((prev) => ({ ...prev, [field]: '' }));
+        setFormMessage('');
+    };
+
+    const validateForm = () => {
+        const nextErrors = {};
+
+        if (!name.trim()) {
+            nextErrors.name = 'Full name is required.';
+        }
+
+        if (!email.trim()) {
+            nextErrors.email = 'Email is required.';
+        } else if (!isValidEmailFormat(email)) {
+            nextErrors.email = 'Enter a valid email address.';
+        }
+
+        if (!password) {
+            nextErrors.password = 'Password is required.';
+        }
+
+        if (!confirmPassword) {
+            nextErrors.confirmPassword = 'Please confirm your password.';
+        } else if (password !== confirmPassword) {
+            nextErrors.confirmPassword = 'Passwords do not match.';
+        }
+
+        setErrors(nextErrors);
+        return Object.keys(nextErrors).length === 0;
+    };
 
     const handleSignUp = async () => {
-        if (
-            !email ||
-            !password ||
-            !confirmPassword ||
-            !name ||
-            !companyName ||
-            !phone
-        ) {
-            Alert.alert('Sign Up', 'Please fill all the fields!', [
-                { text: 'OK' },
-            ]);
-            return;
-        }
-        if (password !== confirmPassword) {
-            Alert.alert('Sign Up', 'Passwords do not match!', [{ text: 'OK' }]);
-            return;
-        }
-        setIsLoading(true);
-        let response = await register(
-            email,
-            password,
-            name,
-            companyName,
-            phone,
-            role,
-            profileImage
-        );
-        setIsLoading(false);
-        if (!response.success) {
-            Alert.alert('Sign Up', response.msg, [{ text: 'OK' }]);
-        } else {
-            router.replace('signIn');
-        }
-    };
-
-    const handleLoginRedirect = () => {
-        router.replace('signIn');
-    };
-
-    const togglePasswordVisibility = () => {
-        setShowPassword(!showPassword);
-    };
-
-    const toggleConfirmPasswordVisibility = () => {
-        setShowConfirmPassword(!showConfirmPassword);
-    };
-
-    const handleImagePick = async () => {
-        const permissionResult =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (permissionResult.granted === false) {
-            Alert.alert(
-                'Permission Required',
-                'You need to grant camera roll permissions to upload a profile picture.'
-            );
+        if (!validateForm()) {
             return;
         }
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
-            allowsEditing: true,
-            aspect: [1, 1],
-            quality: 1,
-        });
+        const response = await register(name, email, password);
 
-        if (!result.canceled) {
-            setProfileImage(result.assets[0].uri);
+        if (response.success) {
+            router.replace('/(auth)/verify-email');
+            return;
         }
+
+        setFormMessage(response.msg);
     };
+
+    const passwordIcon = (
+        <IconSolarLockPassword
+            width={22}
+            height={22}
+        />
+    );
+    const passwordMeetsPolicy =
+        password.length > 0 && !getLocalPasswordValidationMessage(password);
+    const isSignUpReady =
+        Boolean(name.trim()) &&
+        isValidEmailFormat(email) &&
+        passwordMeetsPolicy &&
+        password === confirmPassword &&
+        !isLoading.register;
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                style={styles.container}
-            >
-                <ScrollView
-                    keyboardShouldPersistTaps='always'
-                    contentContainerStyle={styles.scrollView}
-                >
-                    <Image
-                        source={require('@assets/images/logo.png')}
-                        style={styles.logo}
-                        resizeMode='contain'
+        <AuthScaffold
+            enterFrom='right'
+            exitTo='right'
+            title='Create an Account?'
+        >
+            <AuthMessage message={formMessage} tone='error' />
+
+            <AuthField
+                label='Full Name'
+                placeholder='Enter your full name'
+                value={name}
+                onChangeText={(value) => clearField('name', value)}
+                autoCapitalize='words'
+                autoCorrect
+                textContentType='name'
+                error={errors.name}
+                icon={
+                    <IconSolarUserRounded
+                        width={22}
+                        height={22}
                     />
-                    <TouchableOpacity
-                        style={styles.imageUpload}
-                        onPress={handleImagePick}
-                    >
-                        {profileImage ? (
-                            <Image
-                                source={{ uri: profileImage }}
-                                style={styles.profileImage}
-                            />
-                        ) : (
-                            <View style={styles.imagePlaceholder}>
-                                <IconProfile
-                                    width={40}
-                                    height={40}
-                                    pathStroke={Colors.light.black30}
-                                />
-                                <Text style={styles.uploadText}>Profile</Text>
-                            </View>
-                        )}
-                    </TouchableOpacity>
-                    <View style={styles.inputContainer}>
-                        <View style={styles.inputWrapper}>
-                            <IconMail
-                                width={24}
-                                height={24}
-                                pathStroke={Colors.light.black30}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder='Email'
-                                placeholderTextColor={Colors.light.black30}
-                                value={email}
-                                onChangeText={setEmail}
-                                keyboardType='email-address'
-                                autoCapitalize='none'
-                            />
-                        </View>
-                        <View style={styles.inputWrapper}>
-                            <IconLock
-                                width={24}
-                                height={24}
-                                pathStroke={Colors.light.black30}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder='Password'
-                                placeholderTextColor={Colors.light.black30}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry={!showPassword}
-                            />
-                            <TouchableOpacity
-                                onPress={togglePasswordVisibility}
-                            >
-                                {showPassword ? (
-                                    <IconHide
-                                        width={24}
-                                        height={24}
-                                        pathStroke={Colors.light.black30}
-                                    />
-                                ) : (
-                                    <IconShow
-                                        width={24}
-                                        height={24}
-                                        pathStroke={Colors.light.black30}
-                                    />
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.inputWrapper}>
-                            <IconLock
-                                width={24}
-                                height={24}
-                                pathStroke={Colors.light.black30}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder='Confirm Password'
-                                placeholderTextColor={Colors.light.black30}
-                                value={confirmPassword}
-                                onChangeText={setConfirmPassword}
-                                secureTextEntry={!showConfirmPassword}
-                            />
-                            <TouchableOpacity
-                                onPress={toggleConfirmPasswordVisibility}
-                            >
-                                {showConfirmPassword ? (
-                                    <IconHide
-                                        width={24}
-                                        height={24}
-                                        pathStroke={Colors.light.black30}
-                                    />
-                                ) : (
-                                    <IconShow
-                                        width={24}
-                                        height={24}
-                                        pathStroke={Colors.light.black30}
-                                    />
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.inputWrapper}>
-                            <IconProfile
-                                width={24}
-                                height={24}
-                                pathStroke={Colors.light.black30}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder='Full Name'
-                                placeholderTextColor={Colors.light.black30}
-                                value={name}
-                                onChangeText={setName}
-                            />
-                        </View>
-                        <View style={styles.inputWrapper}>
-                            <Ionicons
-                                name='business-outline'
-                                size={24}
-                                color={Colors.light.black30}
-                                style={styles.inputIcon}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder='Company Name'
-                                placeholderTextColor={Colors.light.black30}
-                                value={companyName}
-                                onChangeText={setCompanyName}
-                            />
-                        </View>
-                        <View style={styles.inputWrapper}>
-                            <IconPhone
-                                width={24}
-                                height={24}
-                                pathStroke={Colors.light.black30}
-                            />
-                            <TextInput
-                                style={styles.input}
-                                placeholder='Phone Number'
-                                placeholderTextColor={Colors.light.black30}
-                                value={phone}
-                                onChangeText={setPhone}
-                                keyboardType='phone-pad'
-                            />
-                        </View>
-                    </View>
-                    <TouchableOpacity
-                        style={styles.button}
-                        onPress={handleSignUp}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator
-                                color={Colors.light.background}
-                            />
-                        ) : (
-                            <Text style={styles.buttonText}>Sign Up</Text>
-                        )}
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.loginButton}
-                        onPress={handleLoginRedirect}
-                    >
-                        <Text style={styles.loginButtonText}>
-                            Already have an account? Log In
-                        </Text>
-                    </TouchableOpacity>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
+                }
+            />
+
+            <AuthField
+                label='Email'
+                placeholder='Enter your email'
+                value={email}
+                onChangeText={(value) => clearField('email', value)}
+                keyboardType='email-address'
+                autoComplete='email'
+                textContentType='emailAddress'
+                error={errors.email}
+                icon={
+                    <IconSolarLetter
+                        width={22}
+                        height={22}
+                    />
+                }
+            />
+
+            <AuthField
+                label='Password'
+                placeholder='Enter your password'
+                value={password}
+                onChangeText={(value) => clearField('password', value)}
+                secureTextEntry={!showPassword}
+                autoComplete='new-password'
+                textContentType='newPassword'
+                error={errors.password}
+                icon={passwordIcon}
+                rightAccessory={
+                    <PasswordVisibilityToggle
+                        onPress={() => setShowPassword((prev) => !prev)}
+                        visible={showPassword}
+                    />
+                }
+            />
+
+            <AuthField
+                label='Confirm Password'
+                placeholder='Confirm your password'
+                value={confirmPassword}
+                onChangeText={(value) => clearField('confirmPassword', value)}
+                secureTextEntry={!showConfirmPassword}
+                autoComplete='new-password'
+                textContentType='newPassword'
+                error={errors.confirmPassword}
+                icon={passwordIcon}
+                rightAccessory={
+                    <PasswordVisibilityToggle
+                        onPress={() =>
+                            setShowConfirmPassword((prev) => !prev)
+                        }
+                        visible={showConfirmPassword}
+                    />
+                }
+            />
+
+            <PasswordNote />
+
+            <AuthPrimaryButton
+                label='Register'
+                onPress={handleSignUp}
+                loading={isLoading.register}
+                disabled={!isSignUpReady}
+            />
+
+            <AuthTextButton
+                onPress={handleReturnToLogin}
+                emphasis
+            >
+                Already have an account? Login
+            </AuthTextButton>
+        </AuthScaffold>
     );
 };
 
 const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: Colors.light.background,
+    noteBox: {
+        borderRadius: 18,
+        paddingHorizontal: 14,
+        paddingVertical: 12,
+        marginBottom: 8,
     },
-    container: {
-        flex: 1,
-    },
-    scrollView: {
-        flexGrow: 1,
-        justifyContent: 'center',
-        padding: 24,
-    },
-    logo: {
-        width: width * 0.6,
-        height: width * 0.2,
-        alignSelf: 'center',
-        marginVertical: 24,
-    },
-    imageUpload: {
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    profileImage: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-    },
-    imagePlaceholder: {
-        width: 100,
-        height: 100,
-        borderRadius: 50,
-        backgroundColor: Colors.light.black10,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    uploadText: {
-        marginTop: 5,
-        color: Colors.light.black60,
+    noteText: {
         fontSize: 12,
-    },
-    inputContainer: {
-        marginBottom: 20,
-    },
-    inputWrapper: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: Colors.light.background,
-        borderWidth: 1,
-        borderColor: Colors.light.black30,
-        borderRadius: 99,
-        marginBottom: 16,
-        padding: 14,
-    },
-    input: {
-        flex: 1,
-        paddingLeft: 10,
-        fontSize: 16,
-        color: Colors.light.text,
-    },
-    button: {
-        backgroundColor: Colors.light.red90,
-        padding: 15,
-        borderRadius: 99,
-        alignItems: 'center',
-        marginBottom: 10,
-    },
-    buttonText: {
-        color: Colors.light.background,
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    loginButton: {
-        padding: 10,
-        alignItems: 'center',
-    },
-    loginButtonText: {
-        color: Colors.light.red90,
-        fontSize: 16,
+        lineHeight: 17,
+        textAlign: 'center',
+        fontWeight: '600',
     },
 });
 

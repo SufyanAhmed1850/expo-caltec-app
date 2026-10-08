@@ -8,13 +8,38 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
    ```bash
    npm install
+   cd server && npm install && cd ..
    ```
 
-2. Start the app
+2. Configure environment
 
    ```bash
-    npx expo start
+   copy .env.example .env
+   copy server\.env.example server\.env
    ```
+
+   Set `MONGODB_URI`, JWT secrets, SMTP credentials, Cloudinary credentials, and `ADMIN_EMAIL` in `server/.env`.
+
+3. Seed backend data
+
+   ```bash
+   npm run server:seed
+   ```
+
+   To promote the first admin, register the `ADMIN_EMAIL` account in the app, then run:
+
+   ```bash
+   npm run server:seed:admin
+   ```
+
+4. Start the backend and app
+
+   ```bash
+   npm run server:dev
+   npx expo start
+   ```
+
+   Android emulator builds use `http://10.0.2.2:4000/api` by default. For physical devices, set `EXPO_PUBLIC_API_URL` in `.env` to a reachable backend URL.
 
 In the output, you'll find options to open the app in a
 

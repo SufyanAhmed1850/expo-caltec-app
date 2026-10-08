@@ -1,18 +1,31 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors } from '@constants/Colors';
 
-const StatusPill = ({ status }) => {
+import { getAppPalette } from '@constants/appTheme';
+
+const StatusPill = ({ status = 'Pending', colors = getAppPalette('light') }) => {
     const getStatusStyle = () => {
         switch (status) {
             case 'Approved':
-                return { backgroundColor: '#33D69F1F', color: '#33D69F' };
+                return {
+                    backgroundColor: colors.isDark ? '#173227' : '#EAF8F1',
+                    color: colors.success,
+                };
             case 'Pending':
-                return { backgroundColor: '#FF8F001F', color: '#FF8F00' };
+                return {
+                    backgroundColor: colors.isDark ? '#352915' : '#FFF5E6',
+                    color: colors.warning,
+                };
             case 'Declined':
-                return { backgroundColor: '#4444440D', color: '#444444' };
+                return {
+                    backgroundColor: colors.isDark ? '#351D27' : '#FFF0F3',
+                    color: colors.danger,
+                };
             default:
-                return { backgroundColor: '#FF8F001F', color: '#FF8F00' };
+                return {
+                    backgroundColor: colors.cardSoft,
+                    color: colors.secondary,
+                };
         }
     };
 
@@ -26,7 +39,7 @@ const StatusPill = ({ status }) => {
             <Text
                 style={[styles.statusText, { color: getStatusStyle().color }]}
             >
-                {status}
+                {status || 'Pending'}
             </Text>
         </View>
     );

@@ -1,129 +1,145 @@
-import React, { createContext, useState, useContext, useCallback } from 'react';
-import {
-    collection,
-    addDoc,
-    getDocs,
-    query,
-    where,
-    deleteDoc,
-    updateDoc,
-    doc,
-} from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import { Alert } from 'react-native';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useState,
+} from 'react';
+
+import { apiRequest } from '@/src/lib/apiClient';
+import { addSocketListener } from '@/src/lib/socketClient';
+import { useAuth } from '@context/authContext';
 
 const ServiceContext = createContext();
+
+const getErrorMessage = (error, fallback) =>
+    error?.message || error?.data?.message || fallback;
 
 export const ServiceProvider = ({ children }) => {
     const [services, setServices] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(false);
+    const { authStatus } = useAuth();
 
     const fetchServices = useCallback(async () => {
+        if (authStatus !== 'authenticated') {
+            setServices([]);
+            setCategories([]);
+            return [];
+        }
+
         setLoading(true);
         try {
-            const servicesSnapshot = await getDocs(collection(db, 'services'));
-            const servicesData = servicesSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            setServices(servicesData);
+            const [servicesResponse, categoriesResponse] = await Promise.all([
+                apiRequest('/services'),
+                apiRequest('/services/categories'),
+            ]);
 
-            // Extract unique categories
-            const uniqueCategories = [
-                ...new Set(servicesData.map((service) => service.category)),
-            ];
-            const categoriesWithCount = uniqueCategories.map((category) => ({
-                name: category,
-                servicesCount: servicesData.filter(
-                    (service) => service.category === category
-                ).length,
-            }));
-            setCategories(categoriesWithCount);
+            setServices(servicesResponse.services || []);
+            setCategories(categoriesResponse.categories || []);
+            return servicesResponse.services || [];
         } catch (error) {
             console.error('Error fetching services:', error);
-            Alert.alert('Error', 'Failed to fetch services');
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    const addService = async (newService) => {
-        if (!newService.category || !newService.name || !newService.price) {
-            Alert.alert('Error', 'Please fill all fields');
-            return false;
-        }
-
-        setLoading(true);
-        try {
-            await addDoc(collection(db, 'services'), {
-                category: newService.category,
-                name: newService.name,
-                price: parseFloat(newService.price),
-            });
-            Alert.alert('Success', 'Service added successfully');
-            await fetchServices(); // Refresh the services list
-            return true;
-        } catch (error) {
-            console.error('Error adding service:', error);
-            Alert.alert('Error', 'Failed to add service');
-            return false;
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const getServicesByCategory = async (category) => {
-        setLoading(true);
-        try {
-            const q = query(
-                collection(db, 'services'),
-                where('category', '==', category)
-            );
-            const querySnapshot = await getDocs(q);
-            const categoryServices = querySnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-            }));
-            return categoryServices;
-        } catch (error) {
-            console.error('Error fetching services by category:', error);
-            Alert.alert('Error', 'Failed to fetch services for this category');
             return [];
         } finally {
             setLoading(false);
         }
-    };
+    }, [authStatus]);
 
-    const deleteService = async (serviceId) => {
+    useEffect(() => {
+        if (authStatus !== 'authenticated') {
+            return undefined;
+        }
+
+        fetchServices();
+        return addSocketListener('service:changed', fetchServices);
+    }, [authStatus, fetchServices]);
+
+    const addService = useCallback(async (newService) => {
+        if (!newService.category || !newService.name || !newService.price) {
+            return {
+                success: false,
+                msg: 'Category, service name, and price are required.',
+            };
+        }
+
         setLoading(true);
         try {
-            await deleteDoc(doc(db, 'services', serviceId));
-            await fetchServices(); // Refresh the services list
-            return true;
+            await apiRequest('/services', {
+                method: 'POST',
+                body: {
+                    category: newService.category,
+                    name: newService.name,
+                    price: Number(newService.price),
+                    currency: newService.currency || 'PKR',
+                },
+            });
+            await fetchServices();
+            return { success: true, msg: 'Service added successfully.' };
+        } catch (error) {
+            console.error('Error adding service:', error);
+            return {
+                success: false,
+                msg: getErrorMessage(error, 'Failed to add service.'),
+            };
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchServices]);
+
+    const getServicesByCategory = useCallback(async (category) => {
+        try {
+            const response = await apiRequest(
+                `/services?category=${encodeURIComponent(category)}`
+            );
+            return response.services || [];
+        } catch (error) {
+            console.error('Error fetching services by category:', error);
+            return [];
+        }
+    }, []);
+
+    const deleteService = useCallback(async (serviceId) => {
+        setLoading(true);
+        try {
+            await apiRequest(`/services/${serviceId}`, { method: 'DELETE' });
+            await fetchServices();
+            return { success: true, msg: 'Service deleted successfully.' };
         } catch (error) {
             console.error('Error deleting service:', error);
-            Alert.alert('Error', 'Failed to delete service');
-            return false;
+            return {
+                success: false,
+                msg: getErrorMessage(error, 'Failed to delete service.'),
+            };
         } finally {
             setLoading(false);
         }
-    };
+    }, [fetchServices]);
 
-    const updateService = async (serviceId, updatedService) => {
+    const updateService = useCallback(async (serviceId, updatedService) => {
         setLoading(true);
         try {
-            await updateDoc(doc(db, 'services', serviceId), updatedService);
-            await fetchServices(); // Refresh the services list
-            return true;
+            await apiRequest(`/services/${serviceId}`, {
+                method: 'PATCH',
+                body: {
+                    category: updatedService.category,
+                    name: updatedService.name,
+                    price: Number(updatedService.price),
+                    currency: updatedService.currency || 'PKR',
+                },
+            });
+            await fetchServices();
+            return { success: true, msg: 'Service updated successfully.' };
         } catch (error) {
             console.error('Error updating service:', error);
-            Alert.alert('Error', 'Failed to update service');
-            return false;
+            return {
+                success: false,
+                msg: getErrorMessage(error, 'Failed to update service.'),
+            };
         } finally {
             setLoading(false);
         }
-    };
+    }, [fetchServices]);
 
     return (
         <ServiceContext.Provider

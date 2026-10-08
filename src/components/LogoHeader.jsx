@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Image, StyleSheet, Dimensions } from 'react-native';
-import { Colors } from '@constants/Colors';
 
 const { width } = Dimensions.get('window');
 
-export const LogoHeader = () => {
+const LogoHeader = () => {
     return (
         <View style={[styles.container]}>
             <Image

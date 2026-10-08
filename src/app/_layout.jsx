@@ -1,49 +1,34 @@
-import { Slot, useRouter, useSegments } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { AuthContextProvider, useAuth } from '@context/authContext';
-import { ServiceProvider } from '@context/serviceContext';
-import { EnquiryProvider } from '@context/enquiryContext';
-import LoadingScreen from '@components/LoadingScreen';
+import React from 'react';
+import { Stack } from 'expo-router';
 import { Provider as PaperProvider } from 'react-native-paper';
 
-const MainLayout = () => {
-    const { isAuthenticated } = useAuth();
-    const segments = useSegments();
-    const router = useRouter();
-    const [isReady, setIsReady] = useState(false);
+import LoadingScreen from '@components/LoadingScreen';
+import { AuthContextProvider, useAuth } from '@context/authContext';
+import { EnquiryProvider } from '@context/enquiryContext';
+import { PushNotificationProvider } from '@context/pushNotificationContext';
+import { ServiceProvider } from '@context/serviceContext';
+import Toast from 'react-native-toast-message';
 
-    useEffect(() => {
-        if (typeof isAuthenticated === 'undefined') return;
+const RootNavigator = () => {
+    const { authStatus } = useAuth();
 
-        if (!isReady) {
-            setIsReady(true);
-            return;
-        }
-
-        console.log('Current segments:', segments);
-
-        const inAuthGroup = segments[0] === '(auth)';
-        const isNotFound = segments[0] === '+not-found';
-        const requiresAuth =
-            segments.includes('user') || segments.includes('enquiry');
-
-        if (isAuthenticated === false && requiresAuth) {
-            // User is not signed in but tries to access protected routes
-            router.replace('/(auth)/signIn');
-        } else if (isAuthenticated === true && inAuthGroup) {
-            // User is signed in but on auth routes
-            router.replace('/(app)/home');
-        } else if (isNotFound) {
-            // Handle not found routes
-            router.replace('/(app)/home');
-        }
-    }, [isAuthenticated, segments, isReady, router]);
-
-    if (!isReady) {
+    if (authStatus === 'loading') {
         return <LoadingScreen />;
     }
 
-    return <Slot />;
+    return (
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name='index' />
+
+            <Stack.Protected guard={authStatus === 'authenticated'}>
+                <Stack.Screen name='(app)' />
+            </Stack.Protected>
+
+            <Stack.Protected guard={authStatus !== 'authenticated'}>
+                <Stack.Screen name='(auth)' />
+            </Stack.Protected>
+        </Stack>
+    );
 };
 
 const RootLayout = () => {
@@ -51,9 +36,12 @@ const RootLayout = () => {
         <AuthContextProvider>
             <ServiceProvider>
                 <EnquiryProvider>
-                    <PaperProvider>
-                        <MainLayout />
-                    </PaperProvider>
+                    <PushNotificationProvider>
+                        <PaperProvider>
+                            <RootNavigator />
+                            <Toast />
+                        </PaperProvider>
+                    </PushNotificationProvider>
                 </EnquiryProvider>
             </ServiceProvider>
         </AuthContextProvider>

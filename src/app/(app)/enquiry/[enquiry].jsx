@@ -1,261 +1,477 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
     ActivityIndicator,
-    SafeAreaView,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    useColorScheme,
+    View,
 } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
-import {
-    doc,
-    getDoc,
-    updateDoc,
-    collection,
-    query,
-    where,
-    getDocs,
-} from 'firebase/firestore';
-import { db } from '@/firebaseConfig';
-import { useAuth } from '@/src/context/authContext';
-import { Colors } from '@/src/constants/Colors';
-import Toast from 'react-native-toast-message';
-import { IconProfile, IconPhone, IconMail } from '@constants/SvgIcons';
-import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack, useLocalSearchParams } from 'expo-router';
+
 import StatusPill from '@/src/components/StatusPill';
+import { useAuth } from '@context/authContext';
+import { useEnquiry } from '@/src/context/enquiryContext';
+import {
+    AppRadii,
+    AppSpacing,
+    AppTypography,
+    formatCurrency,
+    formatDate,
+    getAppPalette,
+    resolveThemePreference,
+} from '@constants/appTheme';
+import {
+    IconLocation,
+    IconMail,
+    IconPhone,
+    IconProfile,
+    IconSolarBuildings,
+    IconSolarDocumentText,
+    IconSolarShieldCheck,
+} from '@constants/SvgIcons';
+
+const getParamValue = (value) => (Array.isArray(value) ? value[0] : value);
+
+const InfoRow = ({ colors, icon, label, value }) => (
+    <View style={styles.infoRow}>
+        <View style={[styles.infoIcon, { backgroundColor: colors.cardSoft }]}>
+            {icon}
+        </View>
+        <View style={styles.infoCopy}>
+            <Text style={[styles.infoLabel, { color: colors.muted }]}>{label}</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>
+                {value || 'Not provided'}
+            </Text>
+        </View>
+    </View>
+);
+
+const Section = ({ children, colors, title }) => (
+    <View
+        style={[
+            styles.section,
+            { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+    >
+        <Text style={[styles.sectionTitle, { color: colors.text }]}>{title}</Text>
+        {children}
+    </View>
+);
+
+const InstrumentCard = ({ colors, instrument, index }) => {
+    const price = Number(instrument?.price) || 0;
+    const quantity = Number(instrument?.quantity) || 0;
+    const customPrice = Number(instrument?.customPrice) || 0;
+    const totalPrice = Number(instrument?.totalPrice) || price * quantity;
+
+    return (
+        <View
+            style={[
+                styles.instrumentCard,
+                { backgroundColor: colors.cardSoft, borderColor: colors.border },
+            ]}
+        >
+            <Text style={[styles.instrumentName, { color: colors.text }]}>
+                {index + 1}. {instrument?.name || 'Instrument'}
+            </Text>
+            <View style={styles.instrumentMetaGrid}>
+                <Text style={[styles.instrumentMeta, { color: colors.secondary }]}>
+                    Qty: {quantity || 'N/A'}
+                </Text>
+                <Text style={[styles.instrumentMeta, { color: colors.secondary }]}>
+                    Base: {formatCurrency(price)}
+                </Text>
+                <Text style={[styles.instrumentMeta, { color: colors.secondary }]}>
+                    Custom: {customPrice > 0 ? formatCurrency(customPrice) : 'N/A'}
+                </Text>
+                <Text style={[styles.instrumentTotal, { color: colors.accent }]}>
+                    Total: {formatCurrency(totalPrice)}
+                </Text>
+            </View>
+        </View>
+    );
+};
 
 export default function EnquiryDetailsPage() {
+    const systemScheme = useColorScheme();
     const { enquiry } = useLocalSearchParams();
+    const enquiryNumber = getParamValue(enquiry);
     const [enquiryData, setEnquiryData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [approvingStatus, setApprovingStatus] = useState(false);
-    const [decliningStatus, setDecliningStatus] = useState(false);
-    const { user } = useAuth();
+    const [refreshing, setRefreshing] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState('');
+    const [errorMessage, setErrorMessage] = useState('');
+    const { userProfile } = useAuth();
+    const { getEnquiry, updateEnquiryStatus } = useEnquiry();
+    const isAdmin = userProfile?.role === 'admin';
+    const resolvedTheme = resolveThemePreference(
+        userProfile?.themePreference,
+        systemScheme
+    );
+    const colors = getAppPalette(resolvedTheme);
 
-    useEffect(() => {
-        fetchEnquiryDetails();
-    }, [enquiry]);
+    const fetchEnquiryDetails = useCallback(async () => {
+        if (!enquiryNumber) {
+            setErrorMessage('Enquiry number is missing.');
+            setLoading(false);
+            return;
+        }
 
-    const fetchEnquiryDetails = async () => {
+        setErrorMessage('');
         try {
-            const enquiriesRef = collection(db, 'enquiries');
-            const q = query(
-                enquiriesRef,
-                where('enquiryNumber', '==', enquiry)
-            );
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                const enquiryDoc = querySnapshot.docs[0];
-                setEnquiryData({ id: enquiryDoc.id, ...enquiryDoc.data() });
-            } else {
-                Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: 'Enquiry not found',
-                });
-            }
+            const nextEnquiry = await getEnquiry(enquiryNumber);
+            setEnquiryData(nextEnquiry);
         } catch (error) {
             console.error('Error fetching enquiry details:', error);
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to fetch enquiry details',
-            });
+            setErrorMessage(
+                error.message || 'Failed to fetch enquiry details.'
+            );
         } finally {
             setLoading(false);
         }
-    };
+    }, [enquiryNumber, getEnquiry]);
 
-    const updateEnquiryStatus = async (newStatus) => {
-        const setStatusFunction =
-            newStatus === 'Approved' ? setApprovingStatus : setDecliningStatus;
-        setStatusFunction(true);
+    useEffect(() => {
+        fetchEnquiryDetails();
+    }, [fetchEnquiryDetails]);
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true);
+        await fetchEnquiryDetails();
+        setRefreshing(false);
+    }, [fetchEnquiryDetails]);
+
+    const handleStatusUpdate = async (newStatus) => {
+        if (!enquiryData?.enquiryNumber || updatingStatus) {
+            return;
+        }
+
+        setUpdatingStatus(newStatus);
+        setErrorMessage('');
         try {
-            if (!enquiryData || !enquiryData.id) {
-                throw new Error('Enquiry data not available');
-            }
-            const enquiryRef = doc(db, 'enquiries', enquiryData.id);
-            await updateDoc(enquiryRef, { status: newStatus });
-            setEnquiryData((prevData) => ({ ...prevData, status: newStatus }));
-            Toast.show({
-                type: 'success',
-                text1: 'Success',
-                text2: 'Enquiry status updated',
-            });
+            const updatedEnquiry = await updateEnquiryStatus(
+                enquiryData.enquiryNumber,
+                newStatus
+            );
+            setEnquiryData(updatedEnquiry);
         } catch (error) {
             console.error('Error updating enquiry status:', error);
-            Toast.show({
-                type: 'error',
-                text1: 'Error',
-                text2: 'Failed to update enquiry status',
-            });
+            setErrorMessage(error.message || 'Failed to update enquiry status.');
         } finally {
-            setStatusFunction(false);
+            setUpdatingStatus('');
         }
     };
 
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size='large' color={Colors.light.red90} />
-            </View>
+            <SafeAreaView
+                style={[
+                    styles.loadingContainer,
+                    { backgroundColor: colors.page },
+                ]}
+            >
+                <ActivityIndicator size='large' color={colors.primary} />
+            </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView
+            edges={['left', 'right']}
+            style={[styles.container, { backgroundColor: colors.page }]}
+        >
             <Stack.Screen
-                options={{ title: `${enquiryData?.enquiryNumber}` }}
+                options={{
+                    title: enquiryData?.enquiryNumber || 'Enquiry',
+                }}
             />
-            <ScrollView style={styles.scrollView}>
-                <View style={styles.headerCard}>
-                    <Text style={styles.enquiryNumber}>
-                        {enquiryData?.enquiryNumber}
-                    </Text>
-                    <Text style={styles.date}>
-                        {new Date(enquiryData?.timestamp).toLocaleDateString()}
-                    </Text>
-                    <StatusPill status={enquiryData?.status} />
-                </View>
-
-                <View style={styles.infoCard}>
-                    <Text style={styles.sectionTitle}>Customer</Text>
-                    <View style={styles.infoRow}>
-                        <IconProfile
-                            width={20}
-                            height={20}
-                            pathStroke={Colors.light.black60}
-                            style={styles.icon}
-                        />
-                        <Text style={styles.infoText}>
-                            {enquiryData?.userName}
+            <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor={colors.primary}
+                    />
+                }
+            >
+                {!!errorMessage && (
+                    <View
+                        style={[
+                            styles.errorCard,
+                            {
+                                backgroundColor: colors.isDark
+                                    ? '#351D27'
+                                    : '#FFF0F3',
+                            },
+                        ]}
+                    >
+                        <Text style={[styles.errorText, { color: colors.danger }]}>
+                            {errorMessage}
                         </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Ionicons
-                            name='business-outline'
-                            size={20}
-                            color={Colors.light.black60}
-                            style={styles.icon}
-                        />
-                        <Text style={styles.infoText}>
-                            {enquiryData?.companyName}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <IconMail
-                            width={20}
-                            height={20}
-                            pathStroke={Colors.light.black60}
-                            style={styles.icon}
-                        />
-                        <Text style={styles.infoText}>
-                            {enquiryData?.email}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <IconPhone
-                            width={20}
-                            height={20}
-                            pathStroke={Colors.light.black60}
-                            style={styles.icon}
-                        />
-                        <Text style={styles.infoText}>
-                            {enquiryData?.phone}
-                        </Text>
-                    </View>
-                </View>
-
-                <View style={styles.infoCard}>
-                    <Text style={styles.sectionTitle}>Enquiry</Text>
-                    <View style={styles.infoRow}>
-                        <Ionicons
-                            name='location-outline'
-                            size={20}
-                            color={Colors.light.black60}
-                            style={styles.icon}
-                        />
-                        <Text style={styles.infoText}>
-                            Place of Calibration:{' '}
-                            {enquiryData?.placeOfCalibration}
-                        </Text>
-                    </View>
-                    <View style={styles.infoRow}>
-                        <Ionicons
-                            name='cash-outline'
-                            size={20}
-                            color={Colors.light.black60}
-                            style={styles.icon}
-                        />
-                        <Text style={styles.infoText}>
-                            Total Amount: PKR{' '}
-                            {enquiryData?.totalAmount.toLocaleString()}
-                        </Text>
-                    </View>
-                </View>
-
-                <View style={styles.infoCard}>
-                    <Text style={styles.sectionTitle}>Instruments</Text>
-                    {enquiryData?.instruments.map((instrument, index) => (
-                        <View
-                            key={index}
-                            style={[
-                                styles.instrumentItem,
-                                index < enquiryData.instruments.length - 1 &&
-                                    styles.instrumentItemBorder,
-                            ]}
-                        >
-                            <Text style={styles.instrumentName}>
-                                {instrument.name}
-                            </Text>
-                            <Text style={styles.instrumentDetail}>
-                                Quantity: {instrument.quantity}
-                            </Text>
-                            <Text style={styles.instrumentDetail}>
-                                Price: PKR {instrument.price.toLocaleString()}
-                            </Text>
-                        </View>
-                    ))}
-                </View>
-
-                {user?.role === 'admin' && (
-                    <View style={styles.adminActions}>
-                        <Text style={styles.sectionTitle}>Admin Actions</Text>
-                        <View style={styles.buttonContainer}>
-                            <TouchableOpacity
-                                style={[styles.button, styles.approveButton]}
-                                onPress={() => updateEnquiryStatus('Approved')}
-                                disabled={approvingStatus || decliningStatus}
-                            >
-                                {approvingStatus ? (
-                                    <ActivityIndicator color='white' />
-                                ) : (
-                                    <Text style={styles.buttonText}>
-                                        Approve
-                                    </Text>
-                                )}
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.button, styles.declineButton]}
-                                onPress={() => updateEnquiryStatus('Declined')}
-                                disabled={approvingStatus || decliningStatus}
-                            >
-                                {decliningStatus ? (
-                                    <ActivityIndicator color='white' />
-                                ) : (
-                                    <Text style={styles.buttonText}>
-                                        Decline
-                                    </Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
                     </View>
                 )}
+
+                {!enquiryData ? (
+                    <View
+                        style={[
+                            styles.emptyCard,
+                            {
+                                backgroundColor: colors.card,
+                                borderColor: colors.border,
+                            },
+                        ]}
+                    >
+                        <IconSolarDocumentText
+                            width={32}
+                            height={32}
+                            pathStroke={colors.muted}
+                        />
+                        <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                            Enquiry unavailable
+                        </Text>
+                        <Text style={[styles.emptyCopy, { color: colors.muted }]}>
+                            Pull to refresh and try loading this enquiry again.
+                        </Text>
+                    </View>
+                ) : (
+                    <>
+                        <View
+                            style={[
+                                styles.headerCard,
+                                {
+                                    backgroundColor: colors.card,
+                                    borderColor: colors.border,
+                                    shadowColor: colors.shadow,
+                                },
+                            ]}
+                        >
+                            <View style={styles.headerTextWrap}>
+                                <Text
+                                    style={[
+                                        styles.enquiryNumber,
+                                        { color: colors.text },
+                                    ]}
+                                >
+                                    {enquiryData.enquiryNumber}
+                                </Text>
+                                <Text
+                                    style={[styles.date, { color: colors.muted }]}
+                                >
+                                    {formatDate(enquiryData.timestamp)}
+                                </Text>
+                            </View>
+                            <StatusPill
+                                status={enquiryData.status}
+                                colors={colors}
+                            />
+                        </View>
+
+                        <Section colors={colors} title='Customer'>
+                            <InfoRow
+                                colors={colors}
+                                label='Contact person'
+                                value={`${enquiryData.userName || 'N/A'}${
+                                    enquiryData.designation
+                                        ? ` - ${enquiryData.designation}`
+                                        : ''
+                                }`}
+                                icon={
+                                    <IconProfile
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                            <InfoRow
+                                colors={colors}
+                                label='Company'
+                                value={enquiryData.companyName}
+                                icon={
+                                    <IconSolarBuildings
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                            <InfoRow
+                                colors={colors}
+                                label='Address'
+                                value={enquiryData.address}
+                                icon={
+                                    <IconLocation
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                            <InfoRow
+                                colors={colors}
+                                label='Email'
+                                value={enquiryData.email}
+                                icon={
+                                    <IconMail
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                            <InfoRow
+                                colors={colors}
+                                label='Phone'
+                                value={enquiryData.phone}
+                                icon={
+                                    <IconPhone
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                        </Section>
+
+                        <Section colors={colors} title='Enquiry details'>
+                            <InfoRow
+                                colors={colors}
+                                label='Calibration location'
+                                value={enquiryData.placeOfCalibration}
+                                icon={
+                                    <IconLocation
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                            <InfoRow
+                                colors={colors}
+                                label='Total amount'
+                                value={formatCurrency(enquiryData.totalAmount)}
+                                icon={
+                                    <IconSolarDocumentText
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                            <InfoRow
+                                colors={colors}
+                                label='Requested amount'
+                                value={formatCurrency(enquiryData.discountedAmount)}
+                                icon={
+                                    <IconSolarShieldCheck
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                            <InfoRow
+                                colors={colors}
+                                label='Comments'
+                                value={enquiryData.comments || 'N/A'}
+                                icon={
+                                    <IconSolarDocumentText
+                                        width={19}
+                                        height={19}
+                                        pathStroke={colors.secondary}
+                                    />
+                                }
+                            />
+                        </Section>
+
+                        <Section colors={colors} title='Instruments'>
+                            {(enquiryData.instruments || []).map(
+                                (instrument, index) => (
+                                    <InstrumentCard
+                                        key={`${instrument?.name || index}-${index}`}
+                                        colors={colors}
+                                        instrument={instrument}
+                                        index={index}
+                                    />
+                                )
+                            )}
+                        </Section>
+
+                        {isAdmin && (
+                            <Section colors={colors} title='Admin actions'>
+                                <View style={styles.buttonContainer}>
+                                    <TouchableOpacity
+                                        activeOpacity={0.86}
+                                        style={[
+                                            styles.actionButton,
+                                            {
+                                                backgroundColor: colors.success,
+                                            },
+                                            (updatingStatus ||
+                                                enquiryData.status ===
+                                                    'Approved') &&
+                                                styles.disabledButton,
+                                        ]}
+                                        onPress={() =>
+                                            handleStatusUpdate('Approved')
+                                        }
+                                        disabled={
+                                            Boolean(updatingStatus) ||
+                                            enquiryData.status === 'Approved'
+                                        }
+                                    >
+                                        {updatingStatus === 'Approved' ? (
+                                            <ActivityIndicator
+                                                color={colors.white}
+                                            />
+                                        ) : (
+                                            <Text style={styles.actionButtonText}>
+                                                Approve
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                    <TouchableOpacity
+                                        activeOpacity={0.86}
+                                        style={[
+                                            styles.actionButton,
+                                            {
+                                                backgroundColor: colors.danger,
+                                            },
+                                            (updatingStatus ||
+                                                enquiryData.status ===
+                                                    'Declined') &&
+                                                styles.disabledButton,
+                                        ]}
+                                        onPress={() =>
+                                            handleStatusUpdate('Declined')
+                                        }
+                                        disabled={
+                                            Boolean(updatingStatus) ||
+                                            enquiryData.status === 'Declined'
+                                        }
+                                    >
+                                        {updatingStatus === 'Declined' ? (
+                                            <ActivityIndicator
+                                                color={colors.white}
+                                            />
+                                        ) : (
+                                            <Text style={styles.actionButtonText}>
+                                                Decline
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                </View>
+                            </Section>
+                        )}
+                    </>
+                )}
             </ScrollView>
-            <Toast />
         </SafeAreaView>
     );
 }
@@ -263,107 +479,140 @@ export default function EnquiryDetailsPage() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: 'white',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: 'white',
     },
-    scrollView: {
-        flex: 1,
-        padding: 16,
+    scrollContent: {
+        padding: AppSpacing.screenX,
+        paddingBottom: 34,
+        gap: AppSpacing.sectionGap,
+    },
+    errorCard: {
+        borderRadius: 20,
+        padding: 14,
+    },
+    errorText: {
+        fontSize: 13,
+        lineHeight: 19,
+        fontWeight: '800',
+    },
+    emptyCard: {
+        minHeight: 260,
+        borderRadius: AppRadii.xl,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+    },
+    emptyTitle: {
+        marginTop: 12,
+        ...AppTypography.cardTitle,
+    },
+    emptyCopy: {
+        marginTop: 6,
+        ...AppTypography.caption,
+        fontWeight: '600',
+        textAlign: 'center',
     },
     headerCard: {
+        borderRadius: AppRadii.xl,
+        borderWidth: StyleSheet.hairlineWidth,
+        padding: 16,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 14,
-        backgroundColor: '#F8F8F8',
-        borderRadius: 20,
-        padding: 16,
-        marginBottom: 16,
+        justifyContent: 'space-between',
+        gap: 12,
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.08,
+        shadowRadius: 20,
+        elevation: 3,
+    },
+    headerTextWrap: {
+        flex: 1,
     },
     enquiryNumber: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#444',
+        ...AppTypography.sectionTitle,
+        marginBottom: 4,
     },
     date: {
-        marginRight: 'auto',
-        fontSize: 12,
-        color: '#fcfcfc',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 99,
-        backgroundColor: '#444',
+        ...AppTypography.caption,
     },
-    infoCard: {
-        backgroundColor: '#F8F8F8',
-        borderRadius: 20,
+    section: {
+        borderRadius: AppRadii.xl,
+        borderWidth: StyleSheet.hairlineWidth,
         padding: 16,
-        paddingBottom: 6,
-        marginBottom: 16,
+        gap: 12,
     },
     sectionTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 14,
+        ...AppTypography.cardTitle,
     },
     infoRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 14,
+        alignItems: 'flex-start',
         gap: 12,
     },
-    icon: {
-        width: 20,
-        height: 20,
+    infoIcon: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 1,
     },
-    infoText: {
-        fontSize: 16,
-        color: '#333',
+    infoCopy: {
+        flex: 1,
     },
-    instrumentItem: {
-        marginBottom: 8,
-        paddingBottom: 8,
+    infoLabel: {
+        ...AppTypography.caption,
+        fontWeight: '800',
+        marginBottom: 3,
     },
-    instrumentItemBorder: {
-        borderBottomWidth: 1,
-        borderBottomColor: '#DDD',
+    infoValue: {
+        fontSize: 15,
+        lineHeight: 21,
+        fontWeight: '700',
+    },
+    instrumentCard: {
+        borderRadius: 20,
+        borderWidth: StyleSheet.hairlineWidth,
+        padding: 14,
     },
     instrumentName: {
-        fontSize: 16,
-        fontWeight: '600',
+        fontSize: 15,
+        fontWeight: '900',
+        marginBottom: 10,
     },
-    instrumentDetail: {
+    instrumentMetaGrid: {
+        gap: 6,
+    },
+    instrumentMeta: {
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    instrumentTotal: {
         fontSize: 14,
-        color: '#666',
-    },
-    adminActions: {
-        marginBottom: 32,
+        fontWeight: '900',
     },
     buttonContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        gap: 10,
     },
-    button: {
+    actionButton: {
         flex: 1,
-        paddingVertical: 12,
-        borderRadius: 99,
+        minHeight: 52,
+        borderRadius: 18,
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    approveButton: {
-        backgroundColor: '#33D69F',
-        marginRight: 8,
+    disabledButton: {
+        opacity: 0.45,
     },
-    declineButton: {
-        backgroundColor: Colors.light.red90,
-        marginLeft: 8,
-    },
-    buttonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
+    actionButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '900',
     },
 });
